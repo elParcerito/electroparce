@@ -365,35 +365,148 @@
     }
 
     /* =========================================================
-       5. ESTILOS DE IMPRESIÓN PROFESIONAL (BOLETA Y CORTE DE CAJA)
+       5. ESTILOS DE IMPRESIÓN REFORZADOS (ALTA LEGIBILIDAD POS)
        ========================================================= */
     #ticket-print { display: none; }
 
     @media print {
       body * { visibility: hidden !important; }
       #ticket-print, #ticket-print * { visibility: visible !important; }
+      
       #ticket-print {
         display: block !important;
         position: absolute !important;
-        left: 0 !important; top: 0 !important;
+        left: 0 !important; 
+        top: 0 !important;
         width: 100% !important;
         background: #ffffff !important;
         color: #000000 !important;
-        padding: 15px !important;
-        font-family: 'Courier New', Courier, monospace !important;
-        font-size: 12px !important;
+        padding: 5px !important;
+        font-family: Arial, Helvetica, sans-serif !important;
+        font-size: 13px !important;
         line-height: 1.4 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
 
-      @page { size: auto; margin: 5mm; }
-      .ticket-box { border: 2px solid #000 !important; padding: 15px !important; }
-      .ticket-header-logo { font-size: 24px !important; font-weight: 900 !important; text-align: center !important; text-transform: uppercase !important; border-bottom: 2px solid #000 !important; padding-bottom: 8px !important; margin-bottom: 10px !important; }
-      .ticket-section-title { font-weight: 800 !important; text-transform: uppercase !important; border-bottom: 1px solid #000 !important; margin: 10px 0 6px 0 !important; padding-bottom: 2px !important; }
-      .ticket-table { width: 100% !important; border-collapse: collapse !important; margin: 10px 0 !important; }
-      .ticket-table th, .ticket-table td { border: 1px solid #000 !important; padding: 6px !important; font-size: 11px !important; text-align: left !important; }
-      .ticket-total-box { font-size: 16px !important; font-weight: 900 !important; text-align: right !important; margin-top: 10px !important; border-top: 2px solid #000 !important; padding-top: 6px !important; }
-      .signature-area { margin-top: 30px !important; display: flex !important; justify-content: space-between !important; text-align: center !important; font-size: 10px !important; }
-      .signature-line { border-top: 1px solid #000 !important; width: 45% !important; padding-top: 4px !important; }
+      @page { size: auto; margin: 2mm; }
+
+      .ticket-box { 
+        border: 2px solid #000000 !important; 
+        padding: 12px !important; 
+      }
+
+      /* TÍTULO Y LOGO */
+      .ticket-header-logo { 
+        font-size: 26px !important; 
+        font-weight: 900 !important; 
+        text-align: center !important; 
+        text-transform: uppercase !important; 
+        letter-spacing: 1px !important;
+        border-bottom: 2px solid #000000 !important; 
+        padding-bottom: 6px !important; 
+        margin-bottom: 8px !important; 
+      }
+
+      /* DATOS TALLER (RUT, DIRECCION, TEL) - AHORA MÁS GRANDES Y NEGRITAS */
+      .ticket-header-info {
+        text-align: center !important;
+        margin-bottom: 12px !important;
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        line-height: 1.5 !important;
+        color: #000000 !important;
+      }
+
+      .ticket-header-info p {
+        font-size: 13px !important;
+        font-weight: 800 !important;
+        margin: 2px 0 !important;
+      }
+
+      /* TITULOS DE SECCIÓN */
+      .ticket-section-title { 
+        font-size: 13px !important;
+        font-weight: 900 !important; 
+        text-transform: uppercase !important; 
+        border-bottom: 2px solid #000000 !important; 
+        margin: 12px 0 6px 0 !important; 
+        padding-bottom: 3px !important; 
+        letter-spacing: 0.5px !important;
+      }
+
+      /* FILAS DE INFORMACIÓN GENERAL */
+      .ticket-row {
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        margin-bottom: 5px !important;
+        color: #000000 !important;
+      }
+
+      .ticket-row strong {
+        font-size: 13px !important;
+        font-weight: 900 !important;
+        text-transform: uppercase !important;
+      }
+
+      /* TABLA DE DETALLE */
+      .ticket-table { 
+        width: 100% !important; 
+        border-collapse: collapse !important; 
+        margin: 10px 0 !important; 
+      }
+
+      .ticket-table th { 
+        border: 2px solid #000000 !important; 
+        padding: 6px !important; 
+        font-size: 12px !important; 
+        font-weight: 900 !important;
+        text-align: left !important; 
+        background-color: #f0f0f0 !important;
+      }
+
+      .ticket-table td { 
+        border: 1px solid #000000 !important; 
+        padding: 6px !important; 
+        font-size: 12px !important; 
+        font-weight: 700 !important; 
+      }
+
+      /* TOTALES Y SALDO PENDIENTE */
+      .ticket-total-box { 
+        font-size: 17px !important; 
+        font-weight: 900 !important; 
+        text-align: right !important; 
+        margin-top: 10px !important; 
+        border-top: 2px solid #000000 !important; 
+        padding-top: 6px !important; 
+      }
+
+      /* SECCIÓN FIRMAS */
+      .signature-area { 
+        margin-top: 35px !important; 
+        display: flex !important; 
+        justify-content: space-between !important; 
+        text-align: center !important; 
+        font-size: 12px !important; 
+        font-weight: 800 !important;
+      }
+
+      .signature-line { 
+        border-top: 2px solid #000000 !important; 
+        width: 45% !important; 
+        padding-top: 6px !important; 
+      }
+
+      /* GARANTÍA PIE DE PÁGINA */
+      .garantia-footer {
+        margin-top: 16px !important; 
+        text-align: center !important; 
+        font-size: 11px !important; 
+        font-weight: 800 !important;
+        border-top: 1px dashed #000000 !important; 
+        padding-top: 8px !important;
+      }
     }
   </style>
 </head>
@@ -643,7 +756,7 @@
   <!-- MODAL: CREAR ORDEN -->
   <div class="modal-overlay" id="modal-nueva-orden">
     <div class="modal-card">
-      <div style="display:flex; justify-style:space-between; align-items:center; margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <h3 style="font-weight:800;">Nueva Orden de Servicio</h3>
         <button style="background:none; border:none; color:white; font-size:20px; cursor:pointer;" onclick="cerrarModalCrear()">&times;</button>
       </div>
@@ -680,32 +793,34 @@
   </div>
 
   <!-- =========================================================
-       PLANTILLA DE IMPRESIÓN MEJORADA Y LEGIBLE (BOLETA Y CAJA)
+       PLANTILLA DE IMPRESIÓN CON TIPOGRAFÍA GRANDE Y NITIDA
        ========================================================= -->
   <div id="ticket-print">
     <div class="ticket-box">
       <!-- HEADER BOLETA -->
       <div class="ticket-header-logo" id="print-shop-name">ELECTROPARCE</div>
-      <div style="text-align: center; margin-bottom: 12px;">
+      
+      <!-- DATOS DE CABECERA AGRANDADOS Y EN NEGRITA -->
+      <div class="ticket-header-info">
         <p id="print-shop-rut">RUT: 77.482.910-K</p>
         <p id="print-shop-address">Av. Principal #1020, El Bosque</p>
         <p id="print-shop-phone">Tel: +56 9 3265 1289</p>
       </div>
 
-      <div style="display:flex; justify-content:space-between; font-weight:bold; border-top:1px solid #000; border-bottom:1px solid #000; padding:4px 0; margin-bottom:10px;">
-        <span id="print-doc-title">COMPROBANTE DE INGRESO</span>
-        <span id="print-folio">FOLIO: #0000</span>
+      <div style="display:flex; justify-content:space-between; font-weight:900; font-size:13px; border-top:2px solid #000; border-bottom:2px solid #000; padding:5px 0; margin-bottom:10px;">
+        <span id="print-doc-title">COMPROBANTE DE SERVICIO</span>
+        <span id="print-folio">FOLIO: #HHMCQF</span>
       </div>
 
-      <p><strong>FECHA EMISIÓN:</strong> <span id="print-fecha">01/10/2026 16:00</span></p>
+      <div class="ticket-row"><strong>FECHA EMISIÓN:</strong> <span id="print-fecha">01/10/2026 16:00</span></div>
       
       <!-- CLIENTE Y EQUIPO -->
       <div class="ticket-section-title">DATOS DEL CLIENTE Y EQUIPO</div>
-      <p><strong>CLIENTE:</strong> <span id="print-cliente"></span></p>
-      <p><strong>TELÉFONO:</strong> <span id="print-telefono"></span></p>
-      <p><strong>EQUIPO:</strong> <span id="print-equipo"></span></p>
-      <p><strong>FALLA REPORTADA:</strong> <span id="print-falla"></span></p>
-      <p><strong>DIAGNOSTICO/BITÁCORA:</strong> <span id="print-bitacora"></span></p>
+      <div class="ticket-row"><strong>CLIENTE:</strong> <span id="print-cliente">Maria Eddy Llanos Osorio</span></div>
+      <div class="ticket-row"><strong>TELÉFONO:</strong> <span id="print-telefono">+56 9 3265 1289</span></div>
+      <div class="ticket-row"><strong>EQUIPO:</strong> <span id="print-equipo">PC, Samsung NP300</span></div>
+      <div class="ticket-row"><strong>FALLA REPORTADA:</strong> <span id="print-falla">El dispositivo no enciende, no carga.</span></div>
+      <div class="ticket-row"><strong>DIAGNÓSTICO/BITÁCORA:</strong> <span id="print-bitacora">Inspección de placa y cargador.</span></div>
 
       <!-- TABLA DETALLE -->
       <div class="ticket-section-title">DETALLE DE COBROS</div>
@@ -719,16 +834,16 @@
         <tbody>
           <tr>
             <td>Servicio Técnico y Reparación de Hardware/Software</td>
-            <td style="text-align: right;" id="print-precio-row">$ 0</td>
+            <td style="text-align: right;" id="print-precio-row">$ 1.000 CLP</td>
           </tr>
         </tbody>
       </table>
 
       <!-- TOTALES -->
-      <div style="text-align: right; line-height: 1.6;">
-        <p>TOTAL SERVICIO: <strong id="print-total">$ 0</strong></p>
-        <p>MONTO ABONADO: <strong id="print-abono">$ 0</strong></p>
-        <p class="ticket-total-box">SALDO PENDIENTE: <span id="print-saldo">$ 0</span></p>
+      <div style="text-align: right; line-height: 1.6; margin-top: 8px;">
+        <div class="ticket-row" style="text-align: right;">TOTAL SERVICIO: <strong id="print-total">$ 1.000 CLP</strong></div>
+        <div class="ticket-row" style="text-align: right;">MONTO ABONADO: <strong id="print-abono">$ 0 CLP</strong></div>
+        <div class="ticket-total-box">SALDO PENDIENTE: <span id="print-saldo">$ 1.000 CLP</span></div>
       </div>
 
       <!-- FIRMAS Y GARANTIA -->
@@ -737,7 +852,7 @@
         <div class="signature-line">Firma Cliente</div>
       </div>
 
-      <div style="margin-top:20px; text-align:center; font-size:10px; border-top:1px dashed #000; padding-top:8px;" id="print-garantia-text">
+      <div class="garantia-footer" id="print-garantia-text">
         Garantía válida por 30 días sobre la reparación efectuada.
       </div>
     </div>
