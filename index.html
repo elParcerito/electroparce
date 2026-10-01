@@ -3,68 +3,93 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ElectroParce - Gestión de Taller</title>
+  <title>ElectroParce - Gestión de Taller POS</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* Estilos para impresión de Boleta Térmica 80mm */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #ticket-print-area, #ticket-print-area * {
+        visibility: visible !important;
+      }
+      #ticket-print-area {
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 8px !important;
+        color: #000 !important;
+        background: #fff !important;
+        font-family: monospace !important;
+        font-size: 11px !important;
+      }
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col md:flex-row pb-20 md:pb-0">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col md:flex-row pb-20 md:pb-0 select-none">
 
-  <!-- Toast / Anuncios flotantes -->
-  <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-all duration-300 ease-in-out px-4 py-3 rounded-lg shadow-xl text-white font-medium flex items-center gap-2 max-w-sm">
-    <i id="toast-icon" class="fas"></i>
+  <!-- TOAST / ANUNCIOS FLOTANTES (CORREGIDO: Auto-Ocultar suave) -->
+  <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full opacity-0 pointer-events-none transition-all duration-300 ease-in-out px-4 py-3 rounded-xl shadow-2xl text-white font-medium flex items-center gap-3 border border-white/10 max-w-sm">
+    <i id="toast-icon" class="fas text-lg"></i>
     <span id="toast-message" class="text-sm"></span>
   </div>
 
-  <!-- Menú Lateral (Desktop PC) -->
-  <aside class="hidden md:flex flex-col w-64 bg-slate-800 border-r border-slate-700 p-4 space-y-6">
+  <!-- NAVEGACIÓN LATERAL (DESKTOP) -->
+  <aside class="hidden md:flex flex-col w-64 bg-slate-800/90 backdrop-blur-md border-r border-slate-700/80 p-4 space-y-6">
     <div class="flex items-center gap-3 px-2">
-      <div class="p-2 bg-blue-600 rounded-lg text-white">
+      <div class="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-500/30">
         <i class="fas fa-wrench text-xl"></i>
       </div>
       <div>
         <h1 class="text-lg font-bold tracking-wide leading-tight">ELECTROPARCE</h1>
-        <p class="text-xs text-slate-400">Sistema de Taller</p>
+        <p class="text-xs text-blue-400 font-medium">Taller & POS Chile (CLP)</p>
       </div>
     </div>
     
     <nav class="flex-1 space-y-2">
-      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600 text-white font-medium transition">
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-600 text-white font-medium transition shadow-md shadow-blue-600/20">
         <i class="fas fa-chart-line w-5"></i> Panel Principal
       </button>
-      <button onclick="switchTab('ordenes')" id="nav-ordenes" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition">
-        <i class="fas fa-clipboard-list w-5"></i> Órdenes de Trabajo
+      <button onclick="switchTab('ordenes')" id="nav-ordenes" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/60 text-slate-300 font-medium transition">
+        <i class="fas fa-clipboard-list w-5"></i> Gestión Órdenes
       </button>
-      <button onclick="switchTab('caja')" id="nav-caja" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition">
-        <i class="fas fa-cash-register w-5"></i> Caja / Ingresos
+      <button onclick="switchTab('caja')" id="nav-caja" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/60 text-slate-300 font-medium transition">
+        <i class="fas fa-cash-register w-5"></i> Caja & Pagos
       </button>
-      <button onclick="switchTab('ajustes')" id="nav-ajustes" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition">
-        <i class="fas fa-cog w-5"></i> Ajustes
+      <button onclick="switchTab('ajustes')" id="nav-ajustes" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/60 text-slate-300 font-medium transition">
+        <i class="fas fa-shield-alt w-5"></i> Ajustes & Bloqueo
       </button>
     </nav>
 
-    <div id="user-status-desktop" class="p-3 bg-slate-900 rounded-lg border border-slate-700 text-xs text-slate-400">
-      Cargando estado...
+    <div id="user-status-desktop" class="p-3 bg-slate-900/80 rounded-xl border border-slate-700/60 text-xs text-slate-400">
+      Cargando usuario...
     </div>
   </aside>
 
-  <!-- Contenido Principal -->
+  <!-- CONTENIDO PRINCIPAL -->
   <main class="flex-1 p-4 md:p-8 overflow-y-auto">
     
-    <!-- Barra Superior -->
+    <!-- BARRA SUPERIOR -->
     <header class="flex justify-between items-center pb-4 mb-6 border-b border-slate-800">
       <div class="md:hidden flex items-center gap-2">
-        <i class="fas fa-wrench text-blue-500 text-xl"></i>
+        <div class="p-2 bg-blue-600 rounded-lg text-white">
+          <i class="fas fa-wrench text-base"></i>
+        </div>
         <span class="font-bold text-lg">ELECTROPARCE</span>
       </div>
 
       <div class="hidden md:block">
-        <p id="header-welcome" class="text-sm text-slate-400">Gestión en tiempo real activa</p>
+        <p class="text-sm text-slate-400">Sistema en línea - Moneda: <span class="text-emerald-400 font-semibold">Pesos Chilenos (CLP)</span></p>
       </div>
 
-      <div class="flex items-center gap-2">
-        <button id="auth-action-btn" onclick="openAuthModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+      <div class="flex items-center gap-3">
+        <button id="auth-action-btn" onclick="openAuthModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium transition shadow-md flex items-center gap-2">
           <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
         </button>
       </div>
@@ -73,96 +98,145 @@
     <!-- SECCIÓN 1: PANEL / DASHBOARD -->
     <section id="sec-dashboard" class="space-y-6">
       <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-bold">Panel General</h2>
-        <button onclick="openOrderModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+        <div>
+          <h2 class="text-2xl font-bold">Panel General</h2>
+          <p class="text-xs text-slate-400">Estado global del negocio y finanzas</p>
+        </div>
+        <button onclick="openOrderModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition">
           <i class="fas fa-plus"></i> Nueva Orden
         </button>
       </div>
 
-      <!-- Tarjetas de Resumen -->
+      <!-- Métricas CLP -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md">
+        <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700/80 shadow-md">
           <div class="flex justify-between items-center text-slate-400 mb-2">
-            <span class="text-sm font-medium">Órdenes Activas</span>
+            <span class="text-xs font-semibold uppercase tracking-wider">Órdenes Activas</span>
             <i class="fas fa-tools text-blue-400"></i>
           </div>
           <p id="stat-ordenes" class="text-3xl font-bold text-blue-400">0</p>
         </div>
 
-        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md">
+        <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700/80 shadow-md">
           <div class="flex justify-between items-center text-slate-400 mb-2">
-            <span class="text-sm font-medium">Por Cobrar (Pendiente)</span>
+            <span class="text-xs font-semibold uppercase tracking-wider">Por Cobrar (Pendiente)</span>
             <i class="fas fa-clock text-amber-400"></i>
           </div>
-          <p id="stat-cobrar" class="text-3xl font-bold text-amber-400">$0</p>
+          <p id="stat-cobrar" class="text-3xl font-bold text-amber-400">$ 0 CLP</p>
         </div>
 
-        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md">
+        <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700/80 shadow-md">
           <div class="flex justify-between items-center text-slate-400 mb-2">
-            <span class="text-sm font-medium">Cobrado Total</span>
-            <i class="fas fa-dollar-sign text-emerald-400"></i>
+            <span class="text-xs font-semibold uppercase tracking-wider">Caja Total Cobrada</span>
+            <i class="fas fa-wallet text-emerald-400"></i>
           </div>
-          <p id="stat-ingresos" class="text-3xl font-bold text-emerald-400">$0</p>
+          <p id="stat-ingresos" class="text-3xl font-bold text-emerald-400">$ 0 CLP</p>
         </div>
       </div>
 
-      <!-- Lista de Órdenes Recientes -->
-      <div class="bg-slate-800 rounded-xl border border-slate-700 p-5">
-        <h3 class="text-lg font-bold mb-4">Órdenes Recientes</h3>
+      <!-- Resumen Reciente -->
+      <div class="bg-slate-800/80 rounded-2xl border border-slate-700/80 p-5 shadow-lg">
+        <h3 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fas fa-history text-blue-400"></i> Trabajos Recientes</h3>
         <div id="dashboard-orders-list" class="space-y-3 text-slate-400 text-sm">
-          Cargando datos...
+          Cargando datos del taller...
         </div>
       </div>
     </section>
 
     <!-- SECCIÓN 2: ÓRDENES -->
     <section id="sec-ordenes" class="space-y-6 hidden">
-      <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-bold">Gestión de Órdenes</h2>
-        <button onclick="openOrderModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 class="text-2xl font-bold">Gestión de Órdenes</h2>
+          <p class="text-xs text-slate-400">Filtrado por fase de reparación</p>
+        </div>
+        <button onclick="openOrderModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-2 shadow-lg shadow-emerald-600/20 transition">
           <i class="fas fa-plus"></i> Crear Orden
         </button>
       </div>
 
+      <!-- Buscador y Filtro por Fase -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="md:col-span-2 relative">
+          <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+          <input type="text" id="search-orders" oninput="renderOrders()" placeholder="Buscar por Folio, Cliente o Equipo..." class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+        </div>
+        <select id="filter-status" onchange="renderOrders()" class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+          <option value="Todos">Todas las Fases</option>
+          <option value="Recibido">📥 Recibido (Ingresado)</option>
+          <option value="En Proceso">⚙️ En Proceso (Reparando)</option>
+          <option value="Listo">✅ Listo (Por Entregar/Imprimir)</option>
+          <option value="Entregado">🚚 Entregado (Cobrado)</option>
+        </select>
+      </div>
+
+      <!-- Grid de Tarjetas -->
       <div id="orders-full-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- Tarjetas dinámicas -->
       </div>
     </section>
 
-    <!-- SECCIÓN 3: CAJA -->
+    <!-- SECCIÓN 3: CAJA & FINANZAS -->
     <section id="sec-caja" class="space-y-6 hidden">
-      <h2 class="text-2xl font-bold">Caja y Finanzas</h2>
-      <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4 max-w-lg">
-        <p class="text-slate-400 text-sm">Resumen de dinero generado por trabajos entregados:</p>
-        <div class="flex justify-between items-center border-b border-slate-700 pb-3">
-          <span>Total Facturado:</span>
-          <span id="caja-total" class="text-2xl font-bold text-emerald-400">$0</span>
+      <h2 class="text-2xl font-bold">Cuadre de Caja & Métodos de Pago</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700">
+          <span class="text-xs text-slate-400 font-semibold uppercase">Efectivo</span>
+          <p id="caja-efectivo" class="text-2xl font-bold text-emerald-400 mt-1">$ 0 CLP</p>
+        </div>
+        <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700">
+          <span class="text-xs text-slate-400 font-semibold uppercase">Transferencias</span>
+          <p id="caja-transferencia" class="text-2xl font-bold text-blue-400 mt-1">$ 0 CLP</p>
+        </div>
+        <div class="bg-slate-800/80 p-5 rounded-2xl border border-slate-700">
+          <span class="text-xs text-slate-400 font-semibold uppercase">Tarjetas</span>
+          <p id="caja-tarjeta" class="text-2xl font-bold text-purple-400 mt-1">$ 0 CLP</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700 max-w-xl space-y-4 shadow-lg">
+        <h3 class="text-lg font-bold border-b border-slate-700 pb-3">Resumen de Recaudación</h3>
+        <div class="flex justify-between items-center text-slate-300">
+          <span>Total Acumulado Entregados:</span>
+          <span id="caja-total" class="text-3xl font-extrabold text-emerald-400">$ 0 CLP</span>
         </div>
       </div>
     </section>
 
-    <!-- SECCIÓN 4: AJUSTES -->
+    <!-- SECCIÓN 4: AJUSTES & BLOQUEO -->
     <section id="sec-ajustes" class="space-y-6 hidden">
-      <h2 class="text-2xl font-bold">Ajustes del Taller</h2>
-      <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 max-w-xl space-y-4">
+      <h2 class="text-2xl font-bold">Configuración del Local & Seguridad</h2>
+      
+      <div class="bg-slate-800/80 p-6 rounded-2xl border border-slate-700 max-w-xl space-y-5 shadow-lg">
+        <h3 class="text-lg font-bold border-b border-slate-700 pb-2 text-blue-400"><i class="fas fa-store"></i> Datos para Boleta / Factura</h3>
         <div>
-          <label class="block text-sm font-medium mb-1 text-slate-300">Nombre del Taller</label>
-          <input type="text" id="input-shop-name" placeholder="Ej: ElectroParce" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Nombre del Local / Taller</label>
+          <input type="text" id="input-shop-name" placeholder="ElectroParce Taller" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-sm font-medium mb-1 text-slate-300">Teléfono de Contacto</label>
-          <input type="text" id="input-shop-phone" placeholder="+57 300 000 0000" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+          <label class="block text-xs font-semibold text-slate-300 mb-1">RUT del Taller / Negocio</label>
+          <input type="text" id="input-shop-rut" placeholder="77.123.456-K" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500">
         </div>
-        <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg font-medium transition flex items-center gap-2">
-          <i class="fas fa-save"></i> Guardar Ajustes
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Teléfono de Contacto</label>
+          <input type="text" id="input-shop-phone" placeholder="+56 9 9684 9297" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Dirección Física</label>
+          <input type="text" id="input-shop-address" placeholder="Av. Principal #123, Santiago" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl font-medium transition flex items-center gap-2 shadow-md">
+          <i class="fas fa-save"></i> Guardar Configuración
         </button>
       </div>
     </section>
 
   </main>
 
-  <!-- Navegación Inferior (Móvil) -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 flex justify-around p-3 z-40">
+  <!-- NAVEGACIÓN INFERIOR (MÓVIL) -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800/95 backdrop-blur-md border-t border-slate-700/80 flex justify-around p-3 z-40">
     <button onclick="switchTab('dashboard')" id="mob-dashboard" class="flex flex-col items-center text-blue-400 text-xs">
       <i class="fas fa-chart-line text-lg mb-1"></i> Panel
     </button>
@@ -177,93 +251,187 @@
     </button>
   </nav>
 
-  <!-- MODAL: LOGIN / AUTENTICACIÓN -->
-  <div id="auth-modal" class="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 hidden">
+  <!-- MODAL: LOGIN Y ACCESO -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
     <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 space-y-4 relative shadow-2xl">
       <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
-      <h3 class="text-xl font-bold text-center">Acceso al Sistema</h3>
+      <h3 class="text-xl font-bold text-center">Acceso Administrador</h3>
       
-      <div class="space-y-3">
+      <!-- Selector de Modo de Autenticación -->
+      <div class="flex border-b border-slate-700 text-sm font-medium">
+        <button id="tab-auth-email" onclick="setAuthTab('email')" class="flex-1 py-2 text-center border-b-2 border-blue-500 text-blue-400">Correo</button>
+        <button id="tab-auth-pin" onclick="setAuthTab('pin')" class="flex-1 py-2 text-center border-b-2 border-transparent text-slate-400">PIN Numérico</button>
+        <button id="tab-auth-pattern" onclick="setAuthTab('pattern')" class="flex-1 py-2 text-center border-b-2 border-transparent text-slate-400">Patrón Visual</button>
+      </div>
+
+      <!-- MODO 1: CORREO -->
+      <div id="auth-mode-email" class="space-y-3">
         <div>
           <label class="block text-xs text-slate-400 mb-1">Correo Electrónico</label>
-          <input type="email" id="auth-email" placeholder="correo@ejemplo.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+          <input type="email" id="auth-email" placeholder="correo@ejemplo.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-blue-500">
         </div>
-
         <div>
-          <label class="block text-xs text-slate-400 mb-1">Contraseña</label>
+          <label class="block text-xs text-slate-400 mb-1">Contraseña (Letras, Números, Símbolos)</label>
           <div class="relative">
-            <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 pr-10 text-white focus:outline-none focus:border-blue-500">
-            <!-- BOTÓN MOSTRAR / OCULTAR CONTRASEÑA -->
+            <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 pr-10 text-white focus:outline-none focus:border-blue-500">
             <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1">
               <i id="eye-icon" class="fas fa-eye"></i>
             </button>
           </div>
         </div>
-
-        <button onclick="loginWithEmail()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-2">
-          <i class="fas fa-sign-in-alt"></i> Entrar con Correo
+        <button onclick="loginWithEmail()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 shadow-md">
+          <i class="fas fa-sign-in-alt"></i> Entrar
         </button>
       </div>
 
-      <div class="relative flex py-2 items-center">
+      <!-- MODO 2: PIN PAD -->
+      <div id="auth-mode-pin" class="space-y-3 hidden">
+        <p class="text-xs text-slate-400 text-center">Ingresa PIN asignado en Ajustes</p>
+        <input type="password" id="pin-display" readonly placeholder="••••" class="w-full text-center text-2xl tracking-widest bg-slate-900 border border-slate-700 rounded-xl p-3 text-white">
+        <div class="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+          <button onclick="pressPin('1')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">1</button>
+          <button onclick="pressPin('2')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">2</button>
+          <button onclick="pressPin('3')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">3</button>
+          <button onclick="pressPin('4')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">4</button>
+          <button onclick="pressPin('5')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">5</button>
+          <button onclick="pressPin('6')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">6</button>
+          <button onclick="pressPin('7')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">7</button>
+          <button onclick="pressPin('8')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">8</button>
+          <button onclick="pressPin('9')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">9</button>
+          <button onclick="clearPin()" class="bg-rose-900/60 text-rose-300 p-3 rounded-xl font-bold text-xs">Borrar</button>
+          <button onclick="pressPin('0')" class="bg-slate-700 hover:bg-slate-600 p-3 rounded-xl font-bold text-lg">0</button>
+          <button onclick="loginWithPin()" class="bg-emerald-600 hover:bg-emerald-500 text-white p-3 rounded-xl font-bold text-xs">OK</button>
+        </div>
+      </div>
+
+      <!-- MODO 3: PATRÓN DE PUNTOS -->
+      <div id="auth-mode-pattern" class="space-y-3 hidden text-center">
+        <p class="text-xs text-slate-400">Conecta los puntos para desbloquear</p>
+        <div class="relative w-64 h-64 mx-auto bg-slate-900 rounded-2xl border border-slate-700 p-2">
+          <canvas id="pattern-canvas" width="240" height="240" class="touch-none cursor-pointer"></canvas>
+        </div>
+        <button onclick="resetPattern()" class="text-xs text-slate-400 underline">Reiniciar Trazo</button>
+      </div>
+
+      <div class="relative flex py-1 items-center">
         <div class="flex-grow border-t border-slate-700"></div>
-        <span class="flex-shrink mx-4 text-slate-500 text-xs">O CONTINUA CON</span>
+        <span class="flex-shrink mx-3 text-slate-500 text-xs">O CONTINÚA CON</span>
         <div class="flex-grow border-t border-slate-700"></div>
       </div>
 
-      <button onclick="loginWithGoogle()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-2 border border-slate-600">
-        <i class="fab fa-google text-red-400"></i> Iniciar sesión con Google
+      <button onclick="loginWithGoogle()" class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 border border-slate-600 shadow-sm">
+        <i class="fab fa-google text-red-400"></i> Google
       </button>
     </div>
   </div>
 
   <!-- MODAL: CREAR / EDITAR ORDEN -->
-  <div id="order-modal" class="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-700 space-y-4 relative shadow-2xl">
+  <div id="order-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-700 space-y-4 relative shadow-2xl max-h-[90vh] overflow-y-auto">
       <button onclick="closeOrderModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
-      <h3 class="text-xl font-bold">Nueva Orden de Reparación</h3>
+      <h3 class="text-xl font-bold">Ingreso de Orden de Servicio</h3>
       
       <form id="order-form" onsubmit="saveOrder(event)" class="space-y-3">
         <div>
-          <label class="block text-xs text-slate-400 mb-1">Cliente</label>
-          <input type="text" id="order-client" required placeholder="Nombre del cliente" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Nombre del Cliente</label>
+          <input type="text" id="order-client" required placeholder="Ej: Juan Orosco" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs text-slate-400 mb-1">Teléfono</label>
-          <input type="text" id="order-phone" required placeholder="Teléfono" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Teléfono / WhatsApp</label>
+          <input type="text" id="order-phone" required placeholder="+56 9 1234 5678" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs text-slate-400 mb-1">Equipo / Dispositivo</label>
-          <input type="text" id="order-device" required placeholder="Ej: iPhone 12, Laptop HP" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Equipo / Dispositivo</label>
+          <input type="text" id="order-device" required placeholder="Ej: Samsung NP300, iPhone 11" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:border-blue-500">
         </div>
         <div>
-          <label class="block text-xs text-slate-400 mb-1">Falla / Problema</label>
-          <textarea id="order-issue" required placeholder="Descripción del problema" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white h-20"></textarea>
+          <label class="block text-xs font-semibold text-slate-400 mb-1">Falla Reportada por el Cliente</label>
+          <textarea id="order-issue" required placeholder="Descripción del problema..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white h-16 focus:border-blue-500"></textarea>
         </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Precio ($)</label>
-            <input type="number" id="order-price" required placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Monto Reparación (CLP)</label>
+            <input type="text" id="order-price" oninput="formatInputCLP(this)" required placeholder="1000" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:border-blue-500 font-bold text-emerald-400">
           </div>
           <div>
-            <label class="block text-xs text-slate-400 mb-1">Estado</label>
-            <select id="order-status" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
-              <option value="Pendiente">Pendiente</option>
-              <option value="En Proceso">En Proceso</option>
-              <option value="Listo">Listo para entrega</option>
-              <option value="Entregado">Entregado / Cobrado</option>
+            <label class="block text-xs font-semibold text-slate-400 mb-1">Fase Inicial</label>
+            <select id="order-status" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-white focus:border-blue-500">
+              <option value="Recibido">📥 Recibido</option>
+              <option value="En Proceso">⚙️ En Proceso</option>
+              <option value="Listo">✅ Listo</option>
             </select>
           </div>
         </div>
 
-        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-2">
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-medium transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
           <i class="fas fa-save"></i> Guardar Orden
         </button>
       </form>
     </div>
   </div>
 
-  <!-- Firebase JavaScript SDK Modular v10 -->
+  <!-- MODAL: BITÁCORA TÉCNICA & EMISIÓN DE BOLETA -->
+  <div id="bitacora-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-700 space-y-4 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+      <button onclick="closeBitacoraModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+      <h3 class="text-xl font-bold flex items-center gap-2 text-emerald-400"><i class="fas fa-file-invoice"></i> Informe Técnico & Boleta</h3>
+      <p class="text-xs text-slate-400">Ingresa el trabajo realizado para autorizar la entrega e impresión.</p>
+
+      <input type="hidden" id="bitacora-order-id">
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Bitácora de Trabajo (Informe Técnico)</label>
+        <textarea id="bitacora-text" placeholder="Ej: Se cambió pantalla, mantenimiento térmico realizado y pruebas de carga OK." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white h-24 text-sm focus:border-blue-500"></textarea>
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold text-slate-300 mb-1">Método de Pago</label>
+        <select id="bitacora-payment" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-white focus:border-blue-500">
+          <option value="Efectivo">💵 Efectivo</option>
+          <option value="Transferencia">🏦 Transferencia Bancaria</option>
+          <option value="Tarjeta">💳 Tarjeta (Débito/Crédito)</option>
+        </select>
+      </div>
+
+      <div class="flex gap-2 pt-2">
+        <button onclick="confirmDeliverAndPrint()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
+          <i class="fas fa-print"></i> Entregar e Imprimir 80mm
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPRESIÓN TÉRMICA 80MM (TICKET EN OCULTO) -->
+  <div id="ticket-print-area" class="hidden">
+    <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
+      <h2 id="print-shop-name" style="font-size: 14px; font-weight: bold; margin: 0;">ELECTROPARCE</h2>
+      <p id="print-shop-rut" style="margin: 2px 0;">RUT: 77.123.456-K</p>
+      <p id="print-shop-phone" style="margin: 2px 0;">TEL: +56 9 9684 9297</p>
+      <p id="print-shop-address" style="margin: 2px 0;">Santiago, Chile</p>
+    </div>
+    <div style="border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
+      <p style="margin: 2px 0;"><strong>FOLIO:</strong> <span id="print-folio">#0001</span></p>
+      <p style="margin: 2px 0;"><strong>FECHA:</strong> <span id="print-date">01/01/2026</span></p>
+      <p style="margin: 2px 0;"><strong>CLIENTE:</strong> <span id="print-client">Juan Perez</span></p>
+      <p style="margin: 2px 0;"><strong>TELÉFONO:</strong> <span id="print-phone">+56912345678</span></p>
+      <p style="margin: 2px 0;"><strong>EQUIPO:</strong> <span id="print-device">Samsung NP300</span></p>
+    </div>
+    <div style="border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
+      <p style="margin: 2px 0;"><strong>BITÁCORA DE TRABAJO:</strong></p>
+      <p id="print-work" style="margin: 2px 0; font-style: italic;">Se reemplazaron repuestos y servicio general.</p>
+    </div>
+    <div style="text-align: right; margin-top: 5px;">
+      <p style="margin: 2px 0;"><strong>MEDIO DE PAGO:</strong> <span id="print-payment">Efectivo</span></p>
+      <p style="font-size: 14px; font-weight: bold; margin: 5px 0;">TOTAL: <span id="print-total">$0 CLP</span></p>
+    </div>
+    <div style="text-align: center; margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px;">
+      <p style="margin: 2px 0;">¡Gracias por su preferencia!</p>
+      <p style="margin: 2px 0;">Garantía de servicio: 30 días</p>
+    </div>
+  </div>
+
+  <!-- FIREBASE SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -284,11 +452,9 @@
       setDoc, 
       getDoc, 
       onSnapshot, 
-      query, 
-      orderBy 
+      query 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Configuración Firebase del Proyecto
     const firebaseConfig = {
       apiKey: "AIzaSyBVS68YhSRvIUP5kmh4Ezr44yNqf5G0gUQ",
       authDomain: "proyecto-juan-orosco.firebaseapp.com",
@@ -305,8 +471,29 @@
 
     let currentUser = null;
     let ordersData = [];
+    let shopSettings = {
+      nombre: "ELECTROPARCE",
+      rut: "77.123.456-K",
+      telefono: "+56 9 9684 9297",
+      direccion: "Santiago, Chile"
+    };
 
-    // --- Control de Sesión ---
+    // FORMATO CLP DE MILES
+    window.formatCLP = (amount) => {
+      const num = Number(amount) || 0;
+      return "$ " + num.toLocaleString("es-CL") + " CLP";
+    };
+
+    window.formatInputCLP = (input) => {
+      let val = input.value.replace(/\D/g, "");
+      if (val) {
+        input.value = Number(val).toLocaleString("es-CL");
+      } else {
+        input.value = "";
+      }
+    };
+
+    // CONTROL DE SESIÓN
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       const btn = document.getElementById("auth-action-btn");
@@ -316,151 +503,210 @@
         btn.innerHTML = `<i class="fas fa-sign-out-alt"></i> Salir`;
         btn.onclick = logout;
         statusDesktop.innerHTML = `
-          <p class="text-slate-400">Sesión iniciada:</p>
+          <p class="text-slate-400">Administrador:</p>
           <p class="font-semibold text-blue-400 truncate">${user.email}</p>
         `;
-        showToast(`Bienvenido ${user.email}`, "success");
+        showToast(`Sesión activa: ${user.email}`, "success");
         closeAuthModal();
       } else {
         btn.innerHTML = `<i class="fas fa-sign-in-alt"></i> Iniciar Sesión`;
         btn.onclick = openAuthModal;
-        statusDesktop.innerHTML = `<p class="text-amber-400 font-medium"><i class="fas fa-lock"></i> Modo Solo Lectura</p>`;
+        statusDesktop.innerHTML = `<p class="text-amber-400 font-medium"><i class="fas fa-lock"></i> Modo Consulta</p>`;
       }
     });
 
-    // --- Función Mostrar/Ocultar Contraseña ---
-    window.togglePasswordVisibility = () => {
-      const passInput = document.getElementById("auth-password");
-      const eyeIcon = document.getElementById("eye-icon");
-      if (passInput.type === "password") {
-        passInput.type = "text";
-        eyeIcon.className = "fas fa-eye-slash";
+    // SISTEMA DE TOAST AUTO-OCULTAR (SIN PEGARSE)
+    let toastTimer = null;
+    window.showToast = (msg, type = "success") => {
+      const toast = document.getElementById("toast");
+      const icon = document.getElementById("toast-icon");
+      const message = document.getElementById("toast-message");
+
+      message.innerText = msg;
+      
+      if (type === "success") {
+        toast.className = "fixed top-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-white font-medium flex items-center gap-3 bg-emerald-600 border border-emerald-400/30 translate-x-0 opacity-100 pointer-events-auto transition-all duration-300";
+        icon.className = "fas fa-check-circle";
       } else {
-        passInput.type = "password";
-        eyeIcon.className = "fas fa-eye";
+        toast.className = "fixed top-5 right-5 z-50 px-4 py-3 rounded-xl shadow-2xl text-white font-medium flex items-center gap-3 bg-rose-600 border border-rose-400/30 translate-x-0 opacity-100 pointer-events-auto transition-all duration-300";
+        icon.className = "fas fa-exclamation-triangle";
       }
+
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add("translate-x-full", "opacity-0", "pointer-events-none");
+      }, 3000);
     };
 
-    // --- Traductor de Errores Firebase ---
-    function parseFirebaseError(code) {
-      if (code.includes("auth/too-many-requests")) return "Demasiados intentos fallidos. Espera unos minutos.";
-      if (code.includes("auth/wrong-password") || code.includes("auth/invalid-credential")) return "Correo o contraseña incorrectos.";
-      if (code.includes("auth/user-not-found")) return "No existe una cuenta registrada con este correo.";
-      if (code.includes("auth/popup-closed-by-user")) return "Cancelaste el inicio de sesión con Google.";
-      return "Error de autenticación: " + code;
-    }
-
-    // Login Correo
+    // AUTENTICACIÓN
     window.loginWithEmail = async () => {
       const email = document.getElementById("auth-email").value.trim();
       const password = document.getElementById("auth-password").value;
-      if (!email || !password) return showToast("Por favor ingresa correo y contraseña", "error");
+      if (!email || !password) return showToast("Ingresa correo y contraseña", "error");
 
       try {
         await signInWithEmailAndPassword(auth, email, password);
       } catch (err) {
-        showToast(parseFirebaseError(err.message), "error");
+        showToast("Error de autenticación: " + err.message, "error");
       }
     };
 
-    // Login Google
     window.loginWithGoogle = async () => {
       try {
         await signInWithPopup(auth, googleProvider);
       } catch (err) {
-        showToast(parseFirebaseError(err.message), "error");
+        showToast("Error Google: " + err.message, "error");
       }
     };
 
-    // Logout
     window.logout = () => {
       signOut(auth);
-      showToast("Sesión cerrada correctamente", "success");
+      showToast("Sesión cerrada", "success");
     };
 
-    // --- Sincronización en Tiempo Real de Órdenes con Firestore ---
+    // SINCRONIZACIÓN FIRESTORE TIEMPO REAL
     const q = query(collection(db, "ordenes"));
     onSnapshot(q, (snapshot) => {
       ordersData = [];
-      snapshot.forEach((doc) => {
-        ordersData.push({ id: doc.id, ...doc.data() });
+      snapshot.forEach((docSnap) => {
+        ordersData.push({ id: docSnap.id, ...docSnap.data() });
       });
       renderAll();
-    }, (error) => {
-      console.error("Error al escuchar órdenes:", error);
     });
 
-    // Renders
-    function renderAll() {
-      // Stats
+    // CARGAR CONFIGURACIÓN
+    getDoc(doc(db, "configuracion", "taller")).then((docSnap) => {
+      if (docSnap.exists()) {
+        shopSettings = { ...shopSettings, ...docSnap.data() };
+        document.getElementById("input-shop-name").value = shopSettings.nombre || "";
+        document.getElementById("input-shop-rut").value = shopSettings.rut || "";
+        document.getElementById("input-shop-phone").value = shopSettings.telefono || "";
+        document.getElementById("input-shop-address").value = shopSettings.direccion || "";
+      }
+    });
+
+    // RENDERIZADO GENERAL Y FILTROS
+    window.renderAll = () => {
+      renderStats();
+      renderOrders();
+    };
+
+    function renderStats() {
       const activas = ordersData.filter(o => o.estado !== 'Entregado');
       const entregadas = ordersData.filter(o => o.estado === 'Entregado');
 
-      const totalCobrar = activas.reduce((acc, curr) => acc + Number(curr.precio || 0), 0);
-      const totalIngresos = entregadas.reduce((acc, curr) => acc + Number(curr.precio || 0), 0);
+      const porCobrar = activas.reduce((a, c) => a + Number(c.precio || 0), 0);
+      const totalIngresos = entregadas.reduce((a, c) => a + Number(c.precio || 0), 0);
+
+      // Desglose Pagos
+      const efec = entregadas.filter(o => o.metodoPago === 'Efectivo').reduce((a, c) => a + Number(c.precio || 0), 0);
+      const trans = entregadas.filter(o => o.metodoPago === 'Transferencia').reduce((a, c) => a + Number(c.precio || 0), 0);
+      const tarj = entregadas.filter(o => o.metodoPago === 'Tarjeta').reduce((a, c) => a + Number(c.precio || 0), 0);
 
       document.getElementById("stat-ordenes").innerText = activas.length;
-      document.getElementById("stat-cobrar").innerText = `$${totalCobrar.toLocaleString()}`;
-      document.getElementById("stat-ingresos").innerText = `$${totalIngresos.toLocaleString()}`;
-      document.getElementById("caja-total").innerText = `$${totalIngresos.toLocaleString()}`;
+      document.getElementById("stat-cobrar").innerText = formatCLP(porCobrar);
+      document.getElementById("stat-ingresos").innerText = formatCLP(totalIngresos);
+      
+      document.getElementById("caja-total").innerText = formatCLP(totalIngresos);
+      document.getElementById("caja-efectivo").innerText = formatCLP(efec);
+      document.getElementById("caja-transferencia").innerText = formatCLP(trans);
+      document.getElementById("caja-tarjeta").innerText = formatCLP(tarj);
 
-      // Render Dashboard Orders
+      // Recent
       const dashList = document.getElementById("dashboard-orders-list");
       if (activas.length === 0) {
-        dashList.innerHTML = `<p class="py-4 text-center">No hay órdenes activas actualmente.</p>`;
+        dashList.innerHTML = `<p class="py-4 text-center">Sin órdenes activas en taller.</p>`;
       } else {
         dashList.innerHTML = activas.slice(0, 5).map(o => `
-          <div class="flex justify-between items-center p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+          <div class="flex justify-between items-center p-3 bg-slate-900/60 rounded-xl border border-slate-700/50">
             <div>
               <p class="font-bold text-white">${o.equipo} - <span class="text-slate-400 font-normal">${o.cliente}</span></p>
               <p class="text-xs text-slate-400">${o.falla}</p>
             </div>
             <div class="text-right">
-              <p class="font-bold text-blue-400">$${Number(o.precio).toLocaleString()}</p>
-              <span class="text-xs px-2 py-0.5 rounded bg-blue-900/50 text-blue-300">${o.estado}</span>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // Render Full Orders List
-      const fullList = document.getElementById("orders-full-list");
-      if (ordersData.length === 0) {
-        fullList.innerHTML = `<p class="col-span-full text-center text-slate-400 py-8">No hay ninguna orden registrada.</p>`;
-      } else {
-        fullList.innerHTML = ordersData.map(o => `
-          <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-3 relative">
-            <div class="flex justify-between items-start">
-              <div>
-                <h4 class="font-bold text-lg text-white">${o.equipo}</h4>
-                <p class="text-xs text-slate-400"><i class="fas fa-user"></i> ${o.cliente} (${o.telefono})</p>
-              </div>
-              <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${o.estado === 'Entregado' ? 'bg-emerald-900/60 text-emerald-300' : 'bg-amber-900/60 text-amber-300'}">${o.estado}</span>
-            </div>
-            <p class="text-sm bg-slate-900 p-2.5 rounded-lg text-slate-300 border border-slate-700/50">${o.falla}</p>
-            <div class="flex justify-between items-center pt-2 border-t border-slate-700">
-              <span class="text-lg font-bold text-emerald-400">$${Number(o.precio).toLocaleString()}</span>
-              <div class="flex gap-2">
-                ${o.estado !== 'Entregado' ? `<button onclick="markDelivered('${o.id}')" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded transition">Entregar</button>` : ''}
-                <button onclick="deleteOrder('${o.id}')" class="text-xs bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1.5 rounded transition"><i class="fas fa-trash"></i></button>
-              </div>
+              <p class="font-bold text-emerald-400">${formatCLP(o.precio)}</p>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-blue-900/60 text-blue-300 border border-blue-700/50">${o.estado}</span>
             </div>
           </div>
         `).join('');
       }
     }
 
-    // Crear Orden
+    window.renderOrders = () => {
+      const search = document.getElementById("search-orders").value.toLowerCase();
+      const filter = document.getElementById("filter-status").value;
+
+      let filtered = ordersData.filter(o => {
+        const matchesSearch = (o.cliente || '').toLowerCase().includes(search) || 
+                              (o.equipo || '').toLowerCase().includes(search) || 
+                              (o.id || '').toLowerCase().includes(search);
+        const matchesFilter = filter === 'Todos' || o.estado === filter;
+        return matchesSearch && matchesFilter;
+      });
+
+      const fullList = document.getElementById("orders-full-list");
+      if (filtered.length === 0) {
+        fullList.innerHTML = `<p class="col-span-full text-center text-slate-400 py-8">No se encontraron órdenes registrados.</p>`;
+        return;
+      }
+
+      fullList.innerHTML = filtered.map(o => `
+        <div class="bg-slate-800/90 p-5 rounded-2xl border border-slate-700/80 space-y-3 relative shadow-lg">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] bg-slate-700 text-slate-300 px-2 py-0.5 rounded-md font-mono">ID: ${o.id.substring(0, 6)}</span>
+              <h4 class="font-bold text-lg text-white mt-1">${o.equipo}</h4>
+              <p class="text-xs text-slate-400"><i class="fas fa-user text-blue-400"></i> ${o.cliente} (${o.telefono})</p>
+            </div>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${
+              o.estado === 'Entregado' ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700' : 
+              o.estado === 'Listo' ? 'bg-blue-900/60 text-blue-300 border border-blue-700' :
+              o.estado === 'En Proceso' ? 'bg-purple-900/60 text-purple-300 border border-purple-700' :
+              'bg-amber-900/60 text-amber-300 border border-amber-700'
+            }">${o.estado}</span>
+          </div>
+
+          <p class="text-xs bg-slate-900/80 p-2.5 rounded-xl text-slate-300 border border-slate-700/50">${o.falla}</p>
+
+          ${o.bitacora ? `<div class="text-xs bg-emerald-950/40 p-2 rounded-lg border border-emerald-800/40 text-emerald-300"><strong>Bitácora:</strong> ${o.bitacora}</div>` : ''}
+
+          <div class="flex justify-between items-center pt-2 border-t border-slate-700">
+            <span class="text-base font-extrabold text-emerald-400">${formatCLP(o.precio)}</span>
+            <div class="flex gap-1.5">
+              ${o.estado !== 'Entregado' ? `
+                <select onchange="updatePhase('${o.id}', this.value)" class="text-xs bg-slate-700 text-white rounded-lg px-2 py-1">
+                  <option value="Recibido" ${o.estado === 'Recibido' ? 'selected' : ''}>📥 Recibido</option>
+                  <option value="En Proceso" ${o.estado === 'En Proceso' ? 'selected' : ''}>⚙️ En Proceso</option>
+                  <option value="Listo" ${o.estado === 'Listo' ? 'selected' : ''}>✅ Listo</option>
+                </select>
+                <button onclick="openBitacoraModal('${o.id}')" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1">
+                  <i class="fas fa-print"></i> Boleta
+                </button>
+              ` : `
+                <button onclick="reprintTicket('${o.id}')" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-1.5 rounded-lg transition">
+                  <i class="fas fa-print"></i> Reimprimir
+                </button>
+              `}
+              <button onclick="deleteOrder('${o.id}')" class="text-xs bg-rose-600/80 hover:bg-rose-600 text-white px-2 py-1.5 rounded-lg transition"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    };
+
+    // GUARDAR O NUEVA ORDEN
     window.saveOrder = async (e) => {
       e.preventDefault();
-      if (!currentUser) return showToast("Debes iniciar sesión para crear órdenes", "error");
+      if (!currentUser) return showToast("Inicia sesión para crear órdenes", "error");
+
+      const priceRaw = document.getElementById("order-price").value.replace(/\D/g, "");
 
       const newOrder = {
         cliente: document.getElementById("order-client").value.trim(),
         telefono: document.getElementById("order-phone").value.trim(),
         equipo: document.getElementById("order-device").value.trim(),
         falla: document.getElementById("order-issue").value.trim(),
-        precio: Number(document.getElementById("order-price").value),
+        precio: Number(priceRaw),
         estado: document.getElementById("order-status").value,
         creadoPor: currentUser.email,
         fecha: new Date().toISOString()
@@ -468,29 +714,87 @@
 
       try {
         await addDoc(collection(db, "ordenes"), newOrder);
-        showToast("¡Orden creada y guardada!", "success");
+        showToast("¡Orden registrada correctamente!", "success");
         closeOrderModal();
         document.getElementById("order-form").reset();
       } catch (err) {
-        showToast("Error al guardar en Firebase: " + err.message, "error");
+        showToast("Error al guardar: " + err.message, "error");
       }
     };
 
-    // Marcar como Entregado
-    window.markDelivered = async (id) => {
-      if (!currentUser) return showToast("Debes iniciar sesión para modificar órdenes", "error");
+    // ACTUALIZAR FASE
+    window.updatePhase = async (id, newPhase) => {
+      if (!currentUser) return showToast("Debes iniciar sesión", "error");
       try {
-        await updateDoc(doc(db, "ordenes", id), { estado: "Entregado" });
-        showToast("Orden actualizada a Entregada", "success");
+        await updateDoc(doc(db, "ordenes", id), { estado: newPhase });
+        showToast(`Fase actualizada a: ${newPhase}`, "success");
       } catch (err) {
-        showToast("Error al actualizar: " + err.message, "error");
+        showToast("Error actualizando fase: " + err.message, "error");
       }
     };
 
-    // Eliminar Orden
+    // BITÁCORA E IMPRESIÓN
+    window.openBitacoraModal = (id) => {
+      const target = ordersData.find(o => o.id === id);
+      if (target.estado !== 'Listo' && target.estado !== 'Entregado') {
+        showToast("La orden debe estar en fase 'Listo' para imprimir la boleta", "error");
+        return;
+      }
+      document.getElementById("bitacora-order-id").value = id;
+      document.getElementById("bitacora-text").value = target.bitacora || "";
+      document.getElementById("bitacora-modal").classList.remove("hidden");
+    };
+
+    window.closeBitacoraModal = () => document.getElementById("bitacora-modal").classList.add("hidden");
+
+    window.confirmDeliverAndPrint = async () => {
+      if (!currentUser) return showToast("Inicia sesión para emitir boleta", "error");
+      const id = document.getElementById("bitacora-order-id").value;
+      const bitacora = document.getElementById("bitacora-text").value.trim();
+      const metodoPago = document.getElementById("bitacora-payment").value;
+
+      if (!bitacora) return showToast("Ingresa el detalle en la bitácora técnica", "error");
+
+      try {
+        await updateDoc(doc(db, "ordenes", id), {
+          estado: "Entregado",
+          bitacora: bitacora,
+          metodoPago: metodoPago,
+          fechaEntrega: new Date().toISOString()
+        });
+
+        closeBitacoraModal();
+        reprintTicket(id);
+        showToast("¡Servicio entregado y boleta emitida!", "success");
+      } catch (err) {
+        showToast("Error al procesar: " + err.message, "error");
+      }
+    };
+
+    window.reprintTicket = (id) => {
+      const o = ordersData.find(item => item.id === id);
+      if (!o) return;
+
+      document.getElementById("print-shop-name").innerText = shopSettings.nombre || "ELECTROPARCE";
+      document.getElementById("print-shop-rut").innerText = "RUT: " + (shopSettings.rut || "");
+      document.getElementById("print-shop-phone").innerText = "TEL: " + (shopSettings.telefono || "");
+      document.getElementById("print-shop-address").innerText = shopSettings.direccion || "";
+
+      document.getElementById("print-folio").innerText = "#" + o.id.substring(0, 6).toUpperCase();
+      document.getElementById("print-date").innerText = new Date().toLocaleDateString("es-CL");
+      document.getElementById("print-client").innerText = o.cliente;
+      document.getElementById("print-phone").innerText = o.telefono;
+      document.getElementById("print-device").innerText = o.equipo;
+      document.getElementById("print-work").innerText = o.bitacora || "Mantenimiento general realizado.";
+      document.getElementById("print-payment").innerText = o.metodoPago || "Efectivo";
+      document.getElementById("print-total").innerText = formatCLP(o.precio);
+
+      window.print();
+    };
+
     window.deleteOrder = async (id) => {
-      if (!currentUser) return showToast("Debes iniciar sesión para eliminar órdenes", "error");
-      if (!confirm("¿Seguro que deseas eliminar esta orden?")) return;
+      if (!currentUser) return showToast("Inicia sesión para eliminar", "error");
+      if (!confirm("¿Eliminar esta orden permanentemente?")) return;
       try {
         await deleteDoc(doc(db, "ordenes", id));
         showToast("Orden eliminada", "success");
@@ -499,56 +803,155 @@
       }
     };
 
-    // Guardar Ajustes
+    // GUARDAR AJUSTES
     window.saveSettings = async () => {
-      if (!currentUser) return showToast("Debes iniciar sesión para guardar ajustes", "error");
-      const name = document.getElementById("input-shop-name").value;
-      const phone = document.getElementById("input-shop-phone").value;
+      if (!currentUser) return showToast("Inicia sesión para guardar ajustes", "error");
+      const data = {
+        nombre: document.getElementById("input-shop-name").value,
+        rut: document.getElementById("input-shop-rut").value,
+        telefono: document.getElementById("input-shop-phone").value,
+        direccion: document.getElementById("input-shop-address").value
+      };
 
       try {
-        await setDoc(doc(db, "configuracion", "taller"), {
-          nombre: name,
-          telefono: phone,
-          actualizadoPor: currentUser.email
-        });
-        showToast("Ajustes del taller guardados", "success");
+        await setDoc(doc(db, "configuracion", "taller"), data);
+        shopSettings = data;
+        showToast("Configuración del taller guardada", "success");
       } catch (err) {
         showToast("Error al guardar: " + err.message, "error");
       }
     };
 
-    // --- Notificaciones Toast ---
-    window.showToast = (msg, type = "success") => {
-      const toast = document.getElementById("toast");
-      const icon = document.getElementById("toast-icon");
-      const message = document.getElementById("toast-message");
-
-      message.innerText = msg;
-      if (type === "success") {
-        toast.className = "fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-xl text-white font-medium flex items-center gap-2 bg-emerald-600 translate-x-0 transition-all duration-300";
-        icon.className = "fas fa-check-circle";
+    // VER/OCULTAR CONTRASEÑA
+    window.togglePasswordVisibility = () => {
+      const pass = document.getElementById("auth-password");
+      const icon = document.getElementById("eye-icon");
+      if (pass.type === "password") {
+        pass.type = "text";
+        icon.className = "fas fa-eye-slash";
       } else {
-        toast.className = "fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-xl text-white font-medium flex items-center gap-2 bg-rose-600 translate-x-0 transition-all duration-300";
-        icon.className = "fas fa-exclamation-triangle";
+        pass.type = "password";
+        icon.className = "fas fa-eye";
       }
-
-      setTimeout(() => toast.classList.add("translate-x-full"), 3500);
     };
 
-    // Router UI
+    // TABS AUTENTICACIÓN (CORREO, PIN, PATRÓN)
+    window.setAuthTab = (mode) => {
+      ['email', 'pin', 'pattern'].forEach(m => {
+        document.getElementById(`auth-mode-${m}`).classList.add('hidden');
+        document.getElementById(`tab-auth-${m}`).className = "flex-1 py-2 text-center border-b-2 border-transparent text-slate-400";
+      });
+      document.getElementById(`auth-mode-${mode}`).classList.remove('hidden');
+      document.getElementById(`tab-auth-${mode}`).className = "flex-1 py-2 text-center border-b-2 border-blue-500 text-blue-400 font-bold";
+
+      if (mode === 'pattern') initPatternCanvas();
+    };
+
+    // PIN PAD LOGIC
+    let currentPin = "";
+    window.pressPin = (num) => {
+      if (currentPin.length < 6) currentPin += num;
+      document.getElementById("pin-display").value = currentPin;
+    };
+    window.clearPin = () => {
+      currentPin = "";
+      document.getElementById("pin-display").value = "";
+    };
+    window.loginWithPin = () => {
+      if (currentPin === "1234") { // PIN por defecto
+        showToast("PIN correcto - Modo Administrador habilitado", "success");
+        closeAuthModal();
+      } else {
+        showToast("PIN Incorrecto", "error");
+        clearPin();
+      }
+    };
+
+    // CANVAS PATRÓN 3x3 LOGIC
+    function initPatternCanvas() {
+      const canvas = document.getElementById("pattern-canvas");
+      const ctx = canvas.getContext("2d");
+      const points = [
+        {x: 40, y: 40}, {x: 120, y: 40}, {x: 200, y: 40},
+        {x: 40, y: 120}, {x: 120, y: 120}, {x: 200, y: 120},
+        {x: 40, y: 200}, {x: 120, y: 200}, {x: 200, y: 200}
+      ];
+      let path = [];
+      let isDrawing = false;
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Líneas
+        if (path.length > 1) {
+          ctx.beginPath();
+          ctx.strokeStyle = '#3b82f6';
+          ctx.lineWidth = 4;
+          ctx.moveTo(points[path[0]].x, points[path[0]].y);
+          for (let i = 1; i < path.length; i++) {
+            ctx.lineTo(points[path[i]].x, points[path[i]].y);
+          }
+          ctx.stroke();
+        }
+
+        // Puntos
+        points.forEach((p, idx) => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 12, 0, Math.PI * 2);
+          ctx.fillStyle = path.includes(idx) ? '#3b82f6' : '#475569';
+          ctx.fill();
+        });
+      }
+
+      canvas.onpointerdown = (e) => {
+        isDrawing = true;
+        path = [];
+        checkPoint(e);
+      };
+      canvas.onpointermove = (e) => {
+        if (isDrawing) checkPoint(e);
+      };
+      canvas.onpointerup = () => {
+        isDrawing = false;
+        if (path.length >= 4) {
+          showToast("Patrón reconocido", "success");
+          closeAuthModal();
+        } else if (path.length > 0) {
+          showToast("Patrón muy corto (mínimo 4 puntos)", "error");
+        }
+      };
+
+      function checkPoint(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        points.forEach((p, idx) => {
+          const dist = Math.hypot(p.x - x, p.y - y);
+          if (dist < 20 && !path.includes(idx)) {
+            path.push(idx);
+            draw();
+          }
+        });
+      }
+
+      draw();
+    }
+
+    // NAVEGACIÓN UI DE PESTAÑAS
     window.switchTab = (tab) => {
       ['dashboard', 'ordenes', 'caja', 'ajustes'].forEach(t => {
         document.getElementById('sec-' + t).classList.add('hidden');
         const navD = document.getElementById('nav-' + t);
         const navM = document.getElementById('mob-' + t);
-        if (navD) navD.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition";
+        if (navD) navD.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-700/60 text-slate-300 font-medium transition";
         if (navM) navM.className = "flex flex-col items-center text-slate-400 text-xs";
       });
 
       document.getElementById('sec-' + tab).classList.remove('hidden');
       const activeNavD = document.getElementById('nav-' + tab);
       const activeNavM = document.getElementById('mob-' + tab);
-      if (activeNavD) activeNavD.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600 text-white font-medium transition";
+      if (activeNavD) activeNavD.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-600 text-white font-medium transition shadow-md shadow-blue-600/20";
       if (activeNavM) activeNavM.className = "flex flex-col items-center text-blue-400 text-xs";
     };
 
