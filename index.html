@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ElectroParce - Gestión de Órdenes</title>
-  <!-- Google Fonts & Icons -->
+  <!-- Google Fonts & FontAwesome -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 
   <style>
     /* =========================================================
-       1. ESTILOS DE LA APLICACIÓN (MODO OSCURO VIBRANTE)
+       1. ESTILOS APPS Y TEMA OSCURO VIBRANTE
        ========================================================= */
     :root {
       --bg-main: #0b0f19;
@@ -22,7 +22,6 @@
       --accent-red: #ef4444;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --border-glow: rgba(0, 242, 254, 0.15);
       --radius: 16px;
     }
 
@@ -37,7 +36,7 @@
     body {
       background-color: var(--bg-main);
       color: var(--text-main);
-      padding-bottom: 90px; /* Espacio para el navbar inferior */
+      padding-bottom: 90px;
       min-height: 100vh;
     }
 
@@ -61,7 +60,7 @@
       margin: 0 auto;
     }
 
-    /* Header y Titulo */
+    /* Encabezado */
     .header-section {
       display: flex;
       justify-content: space-between;
@@ -95,14 +94,14 @@
       gap: 8px;
       cursor: pointer;
       box-shadow: 0 4px 12px rgba(0, 242, 254, 0.3);
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.2s;
     }
 
     .btn-primary:active {
       transform: scale(0.96);
     }
 
-    /* Buscador y Filtros */
+    /* Controles de Búsqueda */
     .search-box {
       position: relative;
       margin-bottom: 12px;
@@ -139,7 +138,7 @@
       outline: none;
     }
 
-    /* Cards de Ordenes */
+    /* Tarjetas de Órdenes */
     .order-card {
       background: var(--bg-card);
       border-radius: var(--radius);
@@ -258,7 +257,7 @@
     .btn-reimprimir { background: #2563eb; color: white; }
     .btn-delete { background: rgba(239, 68, 68, 0.2); color: #f87171; }
 
-    /* Navbar Inferior */
+    /* Navegación Inferior */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -291,13 +290,13 @@
       font-size: 18px;
     }
 
-    /* Ocultar el ticket impreso en pantalla normal */
+    /* Ocultar boleta en vista normal */
     #ticket-print {
       display: none;
     }
 
     /* =========================================================
-       2. REGLAS DE IMPRESIÓN CORREGIDAS (SIN PÁGINAS EN BLANCO)
+       2. CORRECCIÓN DE IMPRESIÓN (PDF SIN PÁGINAS EN BLANCO)
        ========================================================= */
     @media print {
       body * {
@@ -326,13 +325,19 @@
       }
     }
 
-    /* Estilo visual del comprobante impreso */
     .ticket-card {
       border: 2px solid #e2e8f0;
       padding: 20px;
       border-radius: 12px;
     }
-    .ticket-head { display: flex; justify-content: space-between; border-bottom: 2px solid #000; padding-bottom: 12px; }
+
+    .ticket-head {
+      display: flex;
+      justify-content: space-between;
+      border-bottom: 2px solid #000;
+      padding-bottom: 12px;
+    }
+
     .ticket-head h2 { font-size: 22px; color: #0f172a; margin: 0; }
     .ticket-body { margin: 16px 0; font-size: 13px; line-height: 1.5; }
     .ticket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 10px; border-radius: 6px; margin: 10px 0; }
@@ -367,7 +372,7 @@
       <input type="text" class="search-input" placeholder="Buscar por Folio, Cliente o Equipo...">
     </div>
 
-    <!-- FILTRO DE FASES -->
+    <!-- FILTRO -->
     <select class="select-phase">
       <option value="todas">Todas las Fases</option>
       <option value="reparacion">En Reparación</option>
@@ -375,10 +380,10 @@
       <option value="entregado">Entregado</option>
     </select>
 
-    <!-- LISTA DE ÓRDENES -->
+    <!-- ÓRDENES DE TRABAJO -->
     <div id="orders-container">
       
-      <!-- TARJETA 1: LISTO PARA ENTREGAR -->
+      <!-- ORDEN LISTO -->
       <div class="order-card" id="card-1">
         <div class="card-top">
           <span class="badge-id">ID: HHMCQF</span>
@@ -394,7 +399,7 @@
         <div class="card-footer">
           <div class="price-tag">$ 1.000 CLP</div>
           <div class="action-btns">
-            <button class="btn-action btn-boleta" onclick="imprimirComprobante('HHMCQF', 'Maria Eddy Llanos Osorio', 'PC, Samsung NP300', 'El dispositivo no enciende, no carga.', 'Se revisó y solucionó falla en cargador.', '$ 1.000 CLP')">
+            <button class="btn-action btn-boleta" onclick="imprimirComprobante('HHMCQF', 'Maria Eddy Llanos Osorio', 'PC, Samsung NP300', 'El dispositivo no enciende, no carga, no da ninguna señal.', 'Se revisó equipo y se solucionó falla en cargador.', '$ 1.000 CLP')">
               <i class="fa-solid fa-print"></i> Boleta
             </button>
             <button class="btn-action btn-delete" onclick="eliminarOrden('card-1')">
@@ -404,7 +409,7 @@
         </div>
       </div>
 
-      <!-- TARJETA 2: ENTREGADO -->
+      <!-- ORDEN ENTREGADO -->
       <div class="order-card" id="card-2">
         <div class="card-top">
           <span class="badge-id">ID: HHMCQF</span>
@@ -418,12 +423,12 @@
           <i class="fa-solid fa-triangle-exclamation"></i> El dispositivo no enciende, no carga, no da ninguna señal.
         </div>
         <div class="bitacora-box">
-          <i class="fa-solid fa-wrench"></i> <strong>Bitácora:</strong> Se realizó su inspección, limpieza de placa madre, midiendo voltaje se descubre que el PC estaba en perfecto estado, el problema estaba en el cargador.
+          <i class="fa-solid fa-wrench"></i> <strong>Bitácora:</strong> Se realizó su inspección, limpieza de placa madre, midiendo voltaje se descubre que el PC estaba en perfecto estado, el problema estaba en el cargador, se solucionó el problema.
         </div>
         <div class="card-footer">
           <div class="price-tag">$ 1.000 CLP</div>
           <div class="action-btns">
-            <button class="btn-action btn-reimprimir" onclick="imprimirComprobante('HHMCQF', 'Maria Eddy Llanos Osorio', 'PC, Samsung NP300', 'El dispositivo no enciende, no carga.', 'Se realizó inspección y se solucionó el problema en el cargador.', '$ 1.000 CLP')">
+            <button class="btn-action btn-reimprimir" onclick="imprimirComprobante('HHMCQF', 'Maria Eddy Llanos Osorio', 'PC, Samsung NP300', 'El dispositivo no enciende, no carga, no da ninguna señal.', 'Se realizó inspección, limpieza de placa madre y se solucionó problema en el cargador.', '$ 1.000 CLP')">
               <i class="fa-solid fa-rotate-right"></i> Reimprimir
             </button>
             <button class="btn-action btn-delete" onclick="eliminarOrden('card-2')">
@@ -436,7 +441,7 @@
     </div>
   </div>
 
-  <!-- NAVBAR INFERIOR -->
+  <!-- NAVEGACIÓN INFERIOR -->
   <nav class="bottom-nav">
     <a href="#" class="nav-item">
       <i class="fa-solid fa-chart-line"></i>
@@ -456,7 +461,7 @@
     </a>
   </nav>
 
-  <!-- PLANTILLA EXCLUSIVA PARA IMPRESIÓN EN PAPEL/PDF -->
+  <!-- CONTENEDOR DE IMPRESIÓN PDF -->
   <div id="ticket-print">
     <div class="ticket-card">
       <div class="ticket-head">
@@ -506,16 +511,15 @@
       </div>
 
       <div style="margin-top: 40px; text-align: center; border-top: 1px dashed #000; padding-top: 10px; font-size: 11px;">
-        <p>¡Gracias por su preferencia!</p>
+        <p>¡Gracias por confiar en ElectroParce!</p>
         <p>Garantía de servicio válida por 30 días.</p>
       </div>
     </div>
   </div>
 
-  <!-- SCRIPT CON LÓGICA DE IMPRESIÓN Y ACCIONES -->
+  <!-- LÓGICA DE JAVASCRIPT -->
   <script>
     function imprimirComprobante(folio, cliente, equipo, falla, bitacora, precio) {
-      // 1. Cargar datos en la plantilla de impresión
       document.getElementById('print-folio').innerText = 'FOLIO: #' + folio;
       document.getElementById('print-cliente').innerText = cliente;
       document.getElementById('print-equipo').innerText = equipo;
@@ -524,7 +528,6 @@
       document.getElementById('print-precio-row').innerText = precio;
       document.getElementById('print-total').innerText = precio;
 
-      // 2. Dar tiempo para renderizar e invocar la ventana de impresión
       setTimeout(() => {
         window.print();
       }, 150);
