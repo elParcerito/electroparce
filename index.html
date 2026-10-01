@@ -3,123 +3,211 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Taller de Reparaciones - Panel de Control</title>
+  <title>ElectroParce - Gestión de Taller</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col md:flex-row pb-16 md:pb-0">
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col md:flex-row pb-20 md:pb-0">
 
-  <!-- Toast / Anuncios de Guardado y Error -->
-  <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 ease-in-out px-4 py-3 rounded-lg shadow-lg text-white font-medium flex items-center gap-2">
+  <!-- Toast / Anuncios flotantes -->
+  <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-all duration-300 ease-in-out px-4 py-3 rounded-lg shadow-xl text-white font-medium flex items-center gap-2 max-w-sm">
     <i id="toast-icon" class="fas"></i>
-    <span id="toast-message"></span>
+    <span id="toast-message" class="text-sm"></span>
   </div>
 
-  <!-- Barra Lateral Desktop -->
+  <!-- Menú Lateral (Desktop PC) -->
   <aside class="hidden md:flex flex-col w-64 bg-slate-800 border-r border-slate-700 p-4 space-y-6">
     <div class="flex items-center gap-3 px-2">
-      <i class="fas fa-wrench text-blue-500 text-2xl"></i>
-      <h1 class="text-xl font-bold tracking-wide">ELECTROPARCE</h1>
+      <div class="p-2 bg-blue-600 rounded-lg text-white">
+        <i class="fas fa-wrench text-xl"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold tracking-wide leading-tight">ELECTROPARCE</h1>
+        <p class="text-xs text-slate-400">Sistema de Taller</p>
+      </div>
     </div>
+    
     <nav class="flex-1 space-y-2">
-      <button onclick="switchTab('dashboard')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-500 transition">
-        <i class="fas fa-chart-line"></i> Panel Principal
+      <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600 text-white font-medium transition">
+        <i class="fas fa-chart-line w-5"></i> Panel Principal
       </button>
-      <button onclick="switchTab('ordenes')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition">
-        <i class="fas fa-clipboard-list"></i> Órdenes
+      <button onclick="switchTab('ordenes')" id="nav-ordenes" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition">
+        <i class="fas fa-clipboard-list w-5"></i> Órdenes de Trabajo
       </button>
-      <button onclick="switchTab('caja')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition">
-        <i class="fas fa-cash-register"></i> Caja
+      <button onclick="switchTab('caja')" id="nav-caja" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition">
+        <i class="fas fa-cash-register w-5"></i> Caja / Ingresos
       </button>
-      <button onclick="switchTab('ajustes')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition">
-        <i class="fas fa-cog"></i> Ajustes
+      <button onclick="switchTab('ajustes')" id="nav-ajustes" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition">
+        <i class="fas fa-cog w-5"></i> Ajustes
       </button>
     </nav>
-    <div id="user-status-desktop" class="p-3 bg-slate-900 rounded-lg border border-slate-700"></div>
+
+    <div id="user-status-desktop" class="p-3 bg-slate-900 rounded-lg border border-slate-700 text-xs text-slate-400">
+      Cargando estado...
+    </div>
   </aside>
 
   <!-- Contenido Principal -->
   <main class="flex-1 p-4 md:p-8 overflow-y-auto">
-    <!-- Header Móvil & Usuario -->
+    
+    <!-- Barra Superior -->
     <header class="flex justify-between items-center pb-4 mb-6 border-b border-slate-800">
       <div class="md:hidden flex items-center gap-2">
         <i class="fas fa-wrench text-blue-500 text-xl"></i>
-        <span class="font-bold">ELECTROPARCE</span>
+        <span class="font-bold text-lg">ELECTROPARCE</span>
       </div>
-      <div class="ml-auto flex items-center gap-3">
+
+      <div class="hidden md:block">
+        <p id="header-welcome" class="text-sm text-slate-400">Gestión en tiempo real activa</p>
+      </div>
+
+      <div class="flex items-center gap-2">
         <button id="auth-action-btn" onclick="openAuthModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
           <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
         </button>
       </div>
     </header>
 
-    <!-- Sección: Dashboard -->
+    <!-- SECCIÓN 1: PANEL / DASHBOARD -->
     <section id="sec-dashboard" class="space-y-6">
-      <h2 class="text-2xl font-bold">Panel de Control</h2>
+      <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold">Panel General</h2>
+        <button onclick="openOrderModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+          <i class="fas fa-plus"></i> Nueva Orden
+        </button>
+      </div>
+
+      <!-- Tarjetas de Resumen -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-          <p class="text-slate-400 text-sm">Órdenes Activas</p>
-          <p id="stat-ordenes" class="text-3xl font-bold mt-1 text-blue-400">0</p>
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-sm font-medium">Órdenes Activas</span>
+            <i class="fas fa-tools text-blue-400"></i>
+          </div>
+          <p id="stat-ordenes" class="text-3xl font-bold text-blue-400">0</p>
         </div>
-        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700">
-          <p class="text-slate-400 text-sm">Total por Cobrar</p>
-          <p id="stat-cobrar" class="text-3xl font-bold mt-1 text-green-400">$0</p>
+
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-sm font-medium">Por Cobrar (Pendiente)</span>
+            <i class="fas fa-clock text-amber-400"></i>
+          </div>
+          <p id="stat-cobrar" class="text-3xl font-bold text-amber-400">$0</p>
+        </div>
+
+        <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md">
+          <div class="flex justify-between items-center text-slate-400 mb-2">
+            <span class="text-sm font-medium">Cobrado Total</span>
+            <i class="fas fa-dollar-sign text-emerald-400"></i>
+          </div>
+          <p id="stat-ingresos" class="text-3xl font-bold text-emerald-400">$0</p>
+        </div>
+      </div>
+
+      <!-- Lista de Órdenes Recientes -->
+      <div class="bg-slate-800 rounded-xl border border-slate-700 p-5">
+        <h3 class="text-lg font-bold mb-4">Órdenes Recientes</h3>
+        <div id="dashboard-orders-list" class="space-y-3 text-slate-400 text-sm">
+          Cargando datos...
         </div>
       </div>
     </section>
 
-    <!-- Sección: Ajustes -->
+    <!-- SECCIÓN 2: ÓRDENES -->
+    <section id="sec-ordenes" class="space-y-6 hidden">
+      <div class="flex justify-between items-center">
+        <h2 class="text-2xl font-bold">Gestión de Órdenes</h2>
+        <button onclick="openOrderModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+          <i class="fas fa-plus"></i> Crear Orden
+        </button>
+      </div>
+
+      <div id="orders-full-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Tarjetas dinámicas -->
+      </div>
+    </section>
+
+    <!-- SECCIÓN 3: CAJA -->
+    <section id="sec-caja" class="space-y-6 hidden">
+      <h2 class="text-2xl font-bold">Caja y Finanzas</h2>
+      <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4 max-w-lg">
+        <p class="text-slate-400 text-sm">Resumen de dinero generado por trabajos entregados:</p>
+        <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+          <span>Total Facturado:</span>
+          <span id="caja-total" class="text-2xl font-bold text-emerald-400">$0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECCIÓN 4: AJUSTES -->
     <section id="sec-ajustes" class="space-y-6 hidden">
       <h2 class="text-2xl font-bold">Ajustes del Taller</h2>
       <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 max-w-xl space-y-4">
         <div>
           <label class="block text-sm font-medium mb-1 text-slate-300">Nombre del Taller</label>
-          <input type="text" id="input-shop-name" placeholder="Ej: ElectroParce" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-blue-500">
+          <input type="text" id="input-shop-name" placeholder="Ej: ElectroParce" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
         </div>
         <div>
           <label class="block text-sm font-medium mb-1 text-slate-300">Teléfono de Contacto</label>
-          <input type="text" id="input-shop-phone" placeholder="+57 300 000 0000" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white focus:outline-none focus:border-blue-500">
+          <input type="text" id="input-shop-phone" placeholder="+57 300 000 0000" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
         </div>
         <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2.5 rounded-lg font-medium transition flex items-center gap-2">
           <i class="fas fa-save"></i> Guardar Ajustes
         </button>
       </div>
     </section>
+
   </main>
 
   <!-- Navegación Inferior (Móvil) -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 flex justify-around p-2 z-40">
-    <button onclick="switchTab('dashboard')" class="flex flex-col items-center text-blue-400 text-xs">
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-800 border-t border-slate-700 flex justify-around p-3 z-40">
+    <button onclick="switchTab('dashboard')" id="mob-dashboard" class="flex flex-col items-center text-blue-400 text-xs">
       <i class="fas fa-chart-line text-lg mb-1"></i> Panel
     </button>
-    <button onclick="switchTab('ordenes')" class="flex flex-col items-center text-slate-400 text-xs">
+    <button onclick="switchTab('ordenes')" id="mob-ordenes" class="flex flex-col items-center text-slate-400 text-xs">
       <i class="fas fa-clipboard-list text-lg mb-1"></i> Órdenes
     </button>
-    <button onclick="switchTab('caja')" class="flex flex-col items-center text-slate-400 text-xs">
+    <button onclick="switchTab('caja')" id="mob-caja" class="flex flex-col items-center text-slate-400 text-xs">
       <i class="fas fa-cash-register text-lg mb-1"></i> Caja
     </button>
-    <button onclick="switchTab('ajustes')" class="flex flex-col items-center text-slate-400 text-xs">
+    <button onclick="switchTab('ajustes')" id="mob-ajustes" class="flex flex-col items-center text-slate-400 text-xs">
       <i class="fas fa-cog text-lg mb-1"></i> Ajustes
     </button>
   </nav>
 
-  <!-- Modal Autenticación -->
-  <div id="auth-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50 hidden">
-    <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 space-y-4 relative">
+  <!-- MODAL: LOGIN / AUTENTICACIÓN -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 space-y-4 relative shadow-2xl">
       <button onclick="closeAuthModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
-      <h3 class="text-xl font-bold text-center">Iniciar Sesión</h3>
+      <h3 class="text-xl font-bold text-center">Acceso al Sistema</h3>
       
       <div class="space-y-3">
-        <input type="email" id="auth-email" placeholder="Correo electrónico" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
-        <input type="password" id="auth-password" placeholder="Contraseña" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
-        <button onclick="loginWithEmail()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-medium transition">Entrar con Correo</button>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Correo Electrónico</label>
+          <input type="email" id="auth-email" placeholder="correo@ejemplo.com" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-blue-500">
+        </div>
+
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Contraseña</label>
+          <div class="relative">
+            <input type="password" id="auth-password" placeholder="••••••••" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 pr-10 text-white focus:outline-none focus:border-blue-500">
+            <!-- BOTÓN MOSTRAR / OCULTAR CONTRASEÑA -->
+            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white p-1">
+              <i id="eye-icon" class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button onclick="loginWithEmail()" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-2">
+          <i class="fas fa-sign-in-alt"></i> Entrar con Correo
+        </button>
       </div>
 
       <div class="relative flex py-2 items-center">
         <div class="flex-grow border-t border-slate-700"></div>
-        <span class="flex-shrink mx-4 text-slate-500 text-sm">O</span>
+        <span class="flex-shrink mx-4 text-slate-500 text-xs">O CONTINUA CON</span>
         <div class="flex-grow border-t border-slate-700"></div>
       </div>
 
@@ -129,7 +217,53 @@
     </div>
   </div>
 
-  <!-- Firebase JavaScript SDK Modular -->
+  <!-- MODAL: CREAR / EDITAR ORDEN -->
+  <div id="order-modal" class="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-700 space-y-4 relative shadow-2xl">
+      <button onclick="closeOrderModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+      <h3 class="text-xl font-bold">Nueva Orden de Reparación</h3>
+      
+      <form id="order-form" onsubmit="saveOrder(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Cliente</label>
+          <input type="text" id="order-client" required placeholder="Nombre del cliente" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Teléfono</label>
+          <input type="text" id="order-phone" required placeholder="Teléfono" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Equipo / Dispositivo</label>
+          <input type="text" id="order-device" required placeholder="Ej: iPhone 12, Laptop HP" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Falla / Problema</label>
+          <textarea id="order-issue" required placeholder="Descripción del problema" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white h-20"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Precio ($)</label>
+            <input type="number" id="order-price" required placeholder="0.00" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+          </div>
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Estado</label>
+            <select id="order-status" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+              <option value="Pendiente">Pendiente</option>
+              <option value="En Proceso">En Proceso</option>
+              <option value="Listo">Listo para entrega</option>
+              <option value="Entregado">Entregado / Cobrado</option>
+            </select>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg font-medium transition flex items-center justify-center gap-2">
+          <i class="fas fa-save"></i> Guardar Orden
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase JavaScript SDK Modular v10 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { 
@@ -142,12 +276,19 @@
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { 
       getFirestore, 
+      collection, 
+      addDoc, 
+      updateDoc, 
+      deleteDoc, 
       doc, 
       setDoc, 
-      getDoc 
+      getDoc, 
+      onSnapshot, 
+      query, 
+      orderBy 
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // Configuración Firebase con tus credenciales
+    // Configuración Firebase del Proyecto
     const firebaseConfig = {
       apiKey: "AIzaSyBVS68YhSRvIUP5kmh4Ezr44yNqf5G0gUQ",
       authDomain: "proyecto-juan-orosco.firebaseapp.com",
@@ -163,9 +304,10 @@
     const googleProvider = new GoogleAuthProvider();
 
     let currentUser = null;
+    let ordersData = [];
 
-    // Control de Estado de Sesión
-    onAuthStateChanged(auth, async (user) => {
+    // --- Control de Sesión ---
+    onAuthStateChanged(auth, (user) => {
       currentUser = user;
       const btn = document.getElementById("auth-action-btn");
       const statusDesktop = document.getElementById("user-status-desktop");
@@ -174,26 +316,50 @@
         btn.innerHTML = `<i class="fas fa-sign-out-alt"></i> Salir`;
         btn.onclick = logout;
         statusDesktop.innerHTML = `
-          <p class="text-xs text-slate-400">Sesión activa:</p>
-          <p class="text-sm font-semibold truncate text-blue-400">${user.email}</p>
+          <p class="text-slate-400">Sesión iniciada:</p>
+          <p class="font-semibold text-blue-400 truncate">${user.email}</p>
         `;
-        showToast(`Bienvenido ${user.displayName || user.email}`, "success");
+        showToast(`Bienvenido ${user.email}`, "success");
         closeAuthModal();
       } else {
         btn.innerHTML = `<i class="fas fa-sign-in-alt"></i> Iniciar Sesión`;
         btn.onclick = openAuthModal;
-        statusDesktop.innerHTML = `<p class="text-xs text-amber-400">Modo lectura (No autenticado)</p>`;
+        statusDesktop.innerHTML = `<p class="text-amber-400 font-medium"><i class="fas fa-lock"></i> Modo Solo Lectura</p>`;
       }
     });
 
+    // --- Función Mostrar/Ocultar Contraseña ---
+    window.togglePasswordVisibility = () => {
+      const passInput = document.getElementById("auth-password");
+      const eyeIcon = document.getElementById("eye-icon");
+      if (passInput.type === "password") {
+        passInput.type = "text";
+        eyeIcon.className = "fas fa-eye-slash";
+      } else {
+        passInput.type = "password";
+        eyeIcon.className = "fas fa-eye";
+      }
+    };
+
+    // --- Traductor de Errores Firebase ---
+    function parseFirebaseError(code) {
+      if (code.includes("auth/too-many-requests")) return "Demasiados intentos fallidos. Espera unos minutos.";
+      if (code.includes("auth/wrong-password") || code.includes("auth/invalid-credential")) return "Correo o contraseña incorrectos.";
+      if (code.includes("auth/user-not-found")) return "No existe una cuenta registrada con este correo.";
+      if (code.includes("auth/popup-closed-by-user")) return "Cancelaste el inicio de sesión con Google.";
+      return "Error de autenticación: " + code;
+    }
+
     // Login Correo
     window.loginWithEmail = async () => {
-      const email = document.getElementById("auth-email").value;
+      const email = document.getElementById("auth-email").value.trim();
       const password = document.getElementById("auth-password").value;
+      if (!email || !password) return showToast("Por favor ingresa correo y contraseña", "error");
+
       try {
         await signInWithEmailAndPassword(auth, email, password);
       } catch (err) {
-        showToast("Error de acceso: " + err.message, "error");
+        showToast(parseFirebaseError(err.message), "error");
       }
     };
 
@@ -202,41 +368,156 @@
       try {
         await signInWithPopup(auth, googleProvider);
       } catch (err) {
-        showToast("Error con Google: " + err.message, "error");
+        showToast(parseFirebaseError(err.message), "error");
       }
     };
 
     // Logout
     window.logout = () => {
       signOut(auth);
-      showToast("Sesión cerrada", "success");
+      showToast("Sesión cerrada correctamente", "success");
     };
 
-    // Guardar en Firestore con validación de autenticación
-    window.saveSettings = async () => {
-      if (!currentUser) {
-        showToast("Error: Debes iniciar sesión para realizar cambios", "error");
-        openAuthModal();
-        return;
+    // --- Sincronización en Tiempo Real de Órdenes con Firestore ---
+    const q = query(collection(db, "ordenes"));
+    onSnapshot(q, (snapshot) => {
+      ordersData = [];
+      snapshot.forEach((doc) => {
+        ordersData.push({ id: doc.id, ...doc.data() });
+      });
+      renderAll();
+    }, (error) => {
+      console.error("Error al escuchar órdenes:", error);
+    });
+
+    // Renders
+    function renderAll() {
+      // Stats
+      const activas = ordersData.filter(o => o.estado !== 'Entregado');
+      const entregadas = ordersData.filter(o => o.estado === 'Entregado');
+
+      const totalCobrar = activas.reduce((acc, curr) => acc + Number(curr.precio || 0), 0);
+      const totalIngresos = entregadas.reduce((acc, curr) => acc + Number(curr.precio || 0), 0);
+
+      document.getElementById("stat-ordenes").innerText = activas.length;
+      document.getElementById("stat-cobrar").innerText = `$${totalCobrar.toLocaleString()}`;
+      document.getElementById("stat-ingresos").innerText = `$${totalIngresos.toLocaleString()}`;
+      document.getElementById("caja-total").innerText = `$${totalIngresos.toLocaleString()}`;
+
+      // Render Dashboard Orders
+      const dashList = document.getElementById("dashboard-orders-list");
+      if (activas.length === 0) {
+        dashList.innerHTML = `<p class="py-4 text-center">No hay órdenes activas actualmente.</p>`;
+      } else {
+        dashList.innerHTML = activas.slice(0, 5).map(o => `
+          <div class="flex justify-between items-center p-3 bg-slate-900/50 rounded-lg border border-slate-700/50">
+            <div>
+              <p class="font-bold text-white">${o.equipo} - <span class="text-slate-400 font-normal">${o.cliente}</span></p>
+              <p class="text-xs text-slate-400">${o.falla}</p>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-blue-400">$${Number(o.precio).toLocaleString()}</p>
+              <span class="text-xs px-2 py-0.5 rounded bg-blue-900/50 text-blue-300">${o.estado}</span>
+            </div>
+          </div>
+        `).join('');
       }
 
-      const shopName = document.getElementById("input-shop-name").value;
-      const shopPhone = document.getElementById("input-shop-phone").value;
+      // Render Full Orders List
+      const fullList = document.getElementById("orders-full-list");
+      if (ordersData.length === 0) {
+        fullList.innerHTML = `<p class="col-span-full text-center text-slate-400 py-8">No hay ninguna orden registrada.</p>`;
+      } else {
+        fullList.innerHTML = ordersData.map(o => `
+          <div class="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-3 relative">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-bold text-lg text-white">${o.equipo}</h4>
+                <p class="text-xs text-slate-400"><i class="fas fa-user"></i> ${o.cliente} (${o.telefono})</p>
+              </div>
+              <span class="text-xs font-semibold px-2.5 py-1 rounded-full ${o.estado === 'Entregado' ? 'bg-emerald-900/60 text-emerald-300' : 'bg-amber-900/60 text-amber-300'}">${o.estado}</span>
+            </div>
+            <p class="text-sm bg-slate-900 p-2.5 rounded-lg text-slate-300 border border-slate-700/50">${o.falla}</p>
+            <div class="flex justify-between items-center pt-2 border-t border-slate-700">
+              <span class="text-lg font-bold text-emerald-400">$${Number(o.precio).toLocaleString()}</span>
+              <div class="flex gap-2">
+                ${o.estado !== 'Entregado' ? `<button onclick="markDelivered('${o.id}')" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded transition">Entregar</button>` : ''}
+                <button onclick="deleteOrder('${o.id}')" class="text-xs bg-rose-600 hover:bg-rose-500 text-white px-2.5 py-1.5 rounded transition"><i class="fas fa-trash"></i></button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // Crear Orden
+    window.saveOrder = async (e) => {
+      e.preventDefault();
+      if (!currentUser) return showToast("Debes iniciar sesión para crear órdenes", "error");
+
+      const newOrder = {
+        cliente: document.getElementById("order-client").value.trim(),
+        telefono: document.getElementById("order-phone").value.trim(),
+        equipo: document.getElementById("order-device").value.trim(),
+        falla: document.getElementById("order-issue").value.trim(),
+        precio: Number(document.getElementById("order-price").value),
+        estado: document.getElementById("order-status").value,
+        creadoPor: currentUser.email,
+        fecha: new Date().toISOString()
+      };
 
       try {
-        await setDoc(doc(db, "configuracion", "general"), {
-          nombreTaller: shopName,
-          telefono: shopPhone,
-          modificadoPor: currentUser.email,
-          fecha: new Date().toISOString()
-        });
-        showToast("Ajustes guardados correctamente", "success");
+        await addDoc(collection(db, "ordenes"), newOrder);
+        showToast("¡Orden creada y guardada!", "success");
+        closeOrderModal();
+        document.getElementById("order-form").reset();
       } catch (err) {
         showToast("Error al guardar en Firebase: " + err.message, "error");
       }
     };
 
-    // Sistema de Notificaciones (Toast)
+    // Marcar como Entregado
+    window.markDelivered = async (id) => {
+      if (!currentUser) return showToast("Debes iniciar sesión para modificar órdenes", "error");
+      try {
+        await updateDoc(doc(db, "ordenes", id), { estado: "Entregado" });
+        showToast("Orden actualizada a Entregada", "success");
+      } catch (err) {
+        showToast("Error al actualizar: " + err.message, "error");
+      }
+    };
+
+    // Eliminar Orden
+    window.deleteOrder = async (id) => {
+      if (!currentUser) return showToast("Debes iniciar sesión para eliminar órdenes", "error");
+      if (!confirm("¿Seguro que deseas eliminar esta orden?")) return;
+      try {
+        await deleteDoc(doc(db, "ordenes", id));
+        showToast("Orden eliminada", "success");
+      } catch (err) {
+        showToast("Error al eliminar: " + err.message, "error");
+      }
+    };
+
+    // Guardar Ajustes
+    window.saveSettings = async () => {
+      if (!currentUser) return showToast("Debes iniciar sesión para guardar ajustes", "error");
+      const name = document.getElementById("input-shop-name").value;
+      const phone = document.getElementById("input-shop-phone").value;
+
+      try {
+        await setDoc(doc(db, "configuracion", "taller"), {
+          nombre: name,
+          telefono: phone,
+          actualizadoPor: currentUser.email
+        });
+        showToast("Ajustes del taller guardados", "success");
+      } catch (err) {
+        showToast("Error al guardar: " + err.message, "error");
+      }
+    };
+
+    // --- Notificaciones Toast ---
     window.showToast = (msg, type = "success") => {
       const toast = document.getElementById("toast");
       const icon = document.getElementById("toast-icon");
@@ -244,29 +525,37 @@
 
       message.innerText = msg;
       if (type === "success") {
-        toast.className = "fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-lg text-white font-medium flex items-center gap-2 bg-emerald-600 translate-x-0 transition-transform duration-300";
+        toast.className = "fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-xl text-white font-medium flex items-center gap-2 bg-emerald-600 translate-x-0 transition-all duration-300";
         icon.className = "fas fa-check-circle";
       } else {
-        toast.className = "fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-lg text-white font-medium flex items-center gap-2 bg-rose-600 translate-x-0 transition-transform duration-300";
+        toast.className = "fixed top-5 right-5 z-50 px-4 py-3 rounded-lg shadow-xl text-white font-medium flex items-center gap-2 bg-rose-600 translate-x-0 transition-all duration-300";
         icon.className = "fas fa-exclamation-triangle";
       }
 
-      setTimeout(() => {
-        toast.classList.add("translate-x-full");
-      }, 3500);
+      setTimeout(() => toast.classList.add("translate-x-full"), 3500);
     };
 
-    // UI Routing
-    window.switchTab = (tabName) => {
-      document.getElementById("sec-dashboard").classList.add("hidden");
-      document.getElementById("sec-ajustes").classList.add("hidden");
-      
-      const target = document.getElementById("sec-" + tabName);
-      if (target) target.classList.remove("hidden");
+    // Router UI
+    window.switchTab = (tab) => {
+      ['dashboard', 'ordenes', 'caja', 'ajustes'].forEach(t => {
+        document.getElementById('sec-' + t).classList.add('hidden');
+        const navD = document.getElementById('nav-' + t);
+        const navM = document.getElementById('mob-' + t);
+        if (navD) navD.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-slate-700 text-slate-300 font-medium transition";
+        if (navM) navM.className = "flex flex-col items-center text-slate-400 text-xs";
+      });
+
+      document.getElementById('sec-' + tab).classList.remove('hidden');
+      const activeNavD = document.getElementById('nav-' + tab);
+      const activeNavM = document.getElementById('mob-' + tab);
+      if (activeNavD) activeNavD.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-blue-600 text-white font-medium transition";
+      if (activeNavM) activeNavM.className = "flex flex-col items-center text-blue-400 text-xs";
     };
 
     window.openAuthModal = () => document.getElementById("auth-modal").classList.remove("hidden");
     window.closeAuthModal = () => document.getElementById("auth-modal").classList.add("hidden");
+    window.openOrderModal = () => document.getElementById("order-modal").classList.remove("hidden");
+    window.closeOrderModal = () => document.getElementById("order-modal").classList.add("hidden");
   </script>
 </body>
 </html>
