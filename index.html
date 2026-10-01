@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sistema de Gestión de Taller Pro</title>
+
+  <!-- PWA & Mobile Web App Meta -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0f172a">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Firebase v10 Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @media print {
+      body * { visibility: hidden !important; }
+      #printable-area, #printable-area * { visibility: visible !important; }
+      #printable-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; margin: 0 !important; padding: 0 !important; background: #fff !important; color: #000 !important; }
+      .no-print { display: none !important; }
+    }
+    .ticket-80mm { width: 78mm; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.3; padding: 4px; color: #000; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+    ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased selection:bg-brand-500 selection:text-white pb-20 md:pb-0">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useMemo } = React;
+
+    const formatMoney = (val) => '$' + (Number(val) || 0).toLocaleString('es-CL');
+    const parseMoney = (str) => typeof str === 'number' ? str : (parseInt((str || '').toString().replace(/[^0-9]/g, ''), 10) || 0);
+    const formatDate = (dateObj) => {
+      if (!dateObj) return 'N/A';
+      let d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
+      return d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    };
+
+    const DEFAULT_CONFIG_KEYS = { apiKey: "", authDomain: "", projectId: "", storageBucket: "", messagingSenderId: "", appId: "" };
+    const DEFAULT_BUSINESS_CONFIG = {
+      name: "TALLER DE REPARACIONES PRO", rut: "76.543.210-K", phone: "+56 9 1234 5678", whatsapp: "+56 9 1234 5678",
+      email: "contacto@tallermovil.cl", address: "Av. Providencia 1234, Santiago", logoUrl: "https://cdn-icons-png.flaticon.com/512/1055/1055687.png",
+      warrantyTerms: "Garantía de 90 días sobre el trabajo realizado. No cubre humedad ni caídas.", documentFooter: "¡Gracias por su preferencia!"
+    };
+
+    function App() {
+      const [firebaseConfig, setFirebaseConfig] = useState(() => JSON.parse(localStorage.getItem('taller_firebase_config')) || DEFAULT_CONFIG_KEYS);
+      const [isFirebaseInitialized, setIsFirebaseInitialized] = useState(false);
+      const [showConfigModal, setShowConfigModal] = useState(false);
+      const [syncStatus, setSyncStatus] = useState('conectando');
+      const [orders, setOrders] = useState([]);
+      const [clients, setClients] = useState([]);
+      const [cashSession, setCashSession] = useState(null);
+      const [cashMovements, setCashMovements] = useState([]);
+      const [closuresHistory, setClosuresHistory] = useState([]);
+      const [businessConfig, setBusinessConfig] = useState(DEFAULT_BUSINESS_CONFIG);
+      const [activeTab, setActiveTab] = useState('dashboard');
+      const [selectedOrder, setSelectedOrder] = useState(null);
+      const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+      const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
+      const [selectedOrderForPayment, setSelectedOrderForPayment] = useState(null);
+      const [printPreviewDoc, setPrintPreviewDoc] = useState(null);
+      const [cashModalType, setCashModalType] = useState(null);
+      const [currentUser] = useState({ name: 'Técnico Principal', role: 'admin' });
+
+      useEffect(() => {
+        try {
+          if (!firebaseConfig.projectId || !firebaseConfig.apiKey) {
+            setSyncStatus('offline');
+            setShowConfigModal(true);
+            return;
+          }
+          if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+          const db = firebase.firestore();
+          db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+          setSyncStatus('online');
+          setIsFirebaseInitialized(true);
+
+          const unsubConfig = db.collection('configuracion').doc('negocio').onSnapshot(doc => doc.exists ? setBusinessConfig(doc.data()) : db.collection('configuracion').doc('negocio').set(DEFAULT_BUSINESS_CONFIG));
+          const unsubOrders = db.collection('ordenes').orderBy('createdAt', 'desc').onSnapshot(snap => setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+          const unsubClients = db.collection('clientes').onSnapshot(snap => setClients(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+          const unsubCash = db.collection('caja').doc('sesion_activa').onSnapshot(doc => setCashSession(doc.exists ? doc.data() : null));
+          const unsubMovements = db.collection('movimientos_caja').orderBy('timestamp', 'desc').limit(100).onSnapshot(snap => setCashMovements(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+          const unsubClosures = db.collection('cierres').orderBy('closedAt', 'desc').onSnapshot(snap => setClosuresHistory(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+
+          return () => { unsubConfig(); unsubOrders(); unsubClients(); unsubCash(); unsubMovements(); unsubClosures(); };
+        } catch (e) { setSyncStatus('error'); }
+      }, [firebaseConfig]);
+
+      const handleSaveFirebaseConfig = (cfg) => {
+        setFirebaseConfig(cfg);
+        localStorage.setItem('taller_firebase_config', JSON.stringify(cfg));
+        setShowConfigModal(false);
+        window.location.reload();
+      };
+
+      const handleSaveBusinessConfig = async (cfg) => {
+        await firebase.firestore().collection('configuracion').doc('negocio').set(cfg, { merge: true });
+        alert("Configuración guardada.");
+      };
+
+      const handleCreateOrder = async (orderData) => {
+        const db = firebase.firestore();
+        const nextNum = (orders.length > 0 ? Math.max(...orders.map(o => o.orderNumber || 0)) : 1000) + 1;
+        const orderId = `OT-${nextNum}`;
+        const now = firebase.firestore.Timestamp.now();
+        const initialPayment = parseMoney(orderData.initialPaymentAmount);
+        const finalCost = parseMoney(orderData.finalCost);
+
+        let initialPaymentsList = initialPayment > 0 ? [{ id: `PAY-${Date.now()}`, amount: initialPayment, method: orderData.initialPaymentMethod || 'Efectivo', note: 'Abono inicial', date: new Date().toISOString(), createdBy: currentUser.name }] : [];
+
+        const newDoc = {
+          orderNumber: nextNum, receivedAt: now, createdAt: now, updatedAt: now,
+          clientName: orderData.clientName, clientPhone: orderData.clientPhone, clientRut: orderData.clientRut || '',
+          brand: orderData.brand, model: orderData.model, imei: orderData.imei || '', pinPattern: orderData.pinPattern || '',
+          physicalCondition: orderData.physicalCondition || '', reportedFault: orderData.reportedFault,
+          diagnosis: orderData.diagnosis || 'Pendiente de revisión', workDone: '',
+          finalCost: finalCost, totalPaid: initialPayment, balance: Math.max(0, finalCost - initialPayment),
+          paymentStatus: initialPayment >= finalCost && finalCost > 0 ? 'Pagado' : (initialPayment > 0 ? 'Abonado' : 'Pendiente'),
+          status: 'Ingresado', pagos: initialPaymentsList,
+          history: [{ date: new Date().toISOString(), user: currentUser.name, action: 'Orden Creada', details: `Recibido con abono de ${formatMoney(initialPayment)}` }]
+        };
+
+        await db.collection('ordenes').doc(orderId).set(newDoc);
+        if (initialPayment > 0 && cashSession && cashSession.status === 'ABIERTA') {
+          await db.collection('movimientos_caja').add({ sessionId: cashSession.id || 'activa', type: 'INGRESO', category: 'PAGO_ORDEN', orderId, amount: initialPayment, method: orderData.initialPaymentMethod || 'Efectivo', description: `Abono inicial Orden #${orderId}`, user: currentUser.name, timestamp: now });
+        }
+        setIsCreatingOrder(false);
+      };
+
+      const handleAddPaymentToOrder = async (orderId, paymentData) => {
+        const db = firebase.firestore();
+        const ref = db.collection('ordenes').doc(orderId);
+        const doc = await ref.get();
+        if (!doc.exists) return;
+
+        const currentData = doc.data();
+        const amount = parseMoney(paymentData.amount);
+        const newTotalPaid = (currentData.totalPaid || 0) + amount;
+        const newBalance = Math.max(0, currentData.finalCost - newTotalPaid);
+
+        const newPayObj = { id: `PAY-${Date.now()}`, amount, method: paymentData.method, note: paymentData.note, date: new Date().toISOString(), createdBy: currentUser.name };
+
+        await ref.update({
+          pagos: [...(currentData.pagos || []), newPayObj], totalPaid: newTotalPaid, balance: newBalance,
+          paymentStatus: newBalance === 0 ? 'Pagado' : 'Abonado',
+          history: [...(currentData.history || []), { date: new Date().toISOString(), user: currentUser.name, action: 'Pago Registrado', details: `Pago de ${formatMoney(amount)}` }]
+        });
+
+        if (cashSession && cashSession.status === 'ABIERTA') {
+          await db.collection('movimientos_caja').add({ sessionId: cashSession.id, type: 'INGRESO', category: 'PAGO_ORDEN', orderId, amount, method: paymentData.method, description: `Abono a Orden #${orderId}`, user: currentUser.name, timestamp: firebase.firestore.Timestamp.now() });
+        }
+        setIsRegisteringPayment(false);
+        setSelectedOrderForPayment(null);
+      };
+
+      const handleUpdateOrderStatus = async (orderId, newStatus, diagnosis, workDone, finalCost) => {
+        const db = firebase.firestore();
+        const ref = db.collection('ordenes').doc(orderId);
+        const doc = await ref.get();
+        if (!doc.exists) return;
+
+        const current = doc.data();
+        const parsedCost = parseMoney(finalCost);
+        const newBalance = Math.max(0, parsedCost - (current.totalPaid || 0));
+
+        await ref.update({
+          status: newStatus, diagnosis, workDone, finalCost: parsedCost, balance: newBalance,
+          paymentStatus: newBalance === 0 && parsedCost > 0 ? 'Pagado' : ((current.totalPaid || 0) > 0 ? 'Abonado' : 'Pendiente'),
+          history: [...(current.history || []), { date: new Date().toISOString(), user: currentUser.name, action: 'Actualización', details: `Estado: ${newStatus}` }]
+        });
+        setSelectedOrder(null);
+      };
+
+      const closureSummary = useMemo(() => {
+        if (!cashSession) return null;
+        let initial = cashSession.initialAmount || 0, totalIngresos = 0, totalEgresos = 0, totalsByMethod = { Efectivo: 0, Débito: 0, Crédito: 0, Transferencia: 0 };
+        cashMovements.forEach(m => {
+          const amt = Number(m.amount) || 0;
+          if (m.type === 'INGRESO') { totalIngresos += amt; totalsByMethod[m.method] = (totalsByMethod[m.method] || 0) + amt; }
+          else if (m.type === 'EGRESO') { totalEgresos += amt; }
+        });
+        return { initial, totalIngresos, totalEgresos, totalsByMethod, expectedCashInHand: initial + (totalsByMethod['Efectivo'] || 0) - totalEgresos };
+      }, [cashSession, cashMovements]);
+
+      return (
+        <div className="min-h-screen flex flex-col bg-slate-100 font-sans text-slate-800">
+          {!isFirebaseInitialized && (
+            <div className="bg-amber-500 text-slate-900 px-4 py-2 font-medium flex items-center justify-between text-xs">
+              <span>Firebase no configurado. Requiere llaves Firestore.</span>
+              <button onClick={() => setShowConfigModal(true)} className="bg-slate-900 text-white px-3 py-1 rounded">Configurar</button>
+            </div>
+          )}
+
+          {/* BARRA SUPERIOR (DESKTOP & MOBILE HEADER) */}
+          <header className="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+            <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <i className="fa-solid fa-wrench text-brand-500 text-lg"></i>
+                <h1 className="font-bold text-sm tracking-wide uppercase text-slate-100 truncate max-w-[180px] sm:max-w-none">{businessConfig.name}</h1>
+              </div>
+              <div className="flex items-center space-x-3 text-xs">
+                <span className={`w-2.5 h-2.5 rounded-full ${syncStatus === 'online' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                <button onClick={() => setShowConfigModal(true)} className="p-1.5 text-slate-400 hover:text-white"><i className="fa-solid fa-gear"></i></button>
+              </div>
+            </div>
+
+            {/* TAB BAR ESCRITORIO */}
+            <div className="hidden md:flex bg-slate-800 border-t border-slate-700/60 overflow-x-auto">
+              <div className="max-w-7xl mx-auto px-4 flex space-x-1">
+                <NavTab active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} icon="fa-chart-pie" label="Dashboard" />
+                <NavTab active={activeTab === 'orders'} onClick={() => setActiveTab('orders')} icon="fa-clipboard-list" label="Órdenes" badge={orders.length} />
+                <NavTab active={activeTab === 'cash'} onClick={() => setActiveTab('cash')} icon="fa-cash-register" label="Caja" />
+                <NavTab active={activeTab === 'clients'} onClick={() => setActiveTab('clients')} icon="fa-users" label="Clientes" />
+                <NavTab active={activeTab === 'config'} onClick={() => setActiveTab('config')} icon="fa-sliders" label="Configuración" />
+              </div>
+            </div>
+          </header>
+
+          {/* CONTENIDO PRINCIPAL */}
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+            {activeTab === 'dashboard' && <DashboardView orders={orders} cashMovements={cashMovements} onNewOrderClick={() => { setActiveTab('orders'); setIsCreatingOrder(true); }} onOpenOrder={setSelectedOrder} />}
+            {activeTab === 'orders' && <OrdersView orders={orders} onNewOrderClick={() => setIsCreatingOrder(true)} onSelectOrder={setSelectedOrder} onRegisterPayment={(o) => { setSelectedOrderForPayment(o); setIsRegisteringPayment(true); }} onPrintDoc={(type, order) => setPrintPreviewDoc({ type, order })} />}
+            {activeTab === 'cash' && <CashView cashSession={cashSession} cashMovements={cashMovements} closuresHistory={closuresHistory} summary={closureSummary} onOpenCash={() => setCashModalType('open')} onNewMovement={() => setCashModalType('movement')} onCierreZ={() => setCashModalType('cierreZ')} />}
+            {activeTab === 'clients' && <ClientsView clients={clients} orders={orders} />}
+            {activeTab === 'config' && <ConfigView config={businessConfig} onSave={handleSaveBusinessConfig} />}
+          </main>
+
+          {/* BARRA NAVEGACIÓN INFERIOR (SÓLO MÓVIL) */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 flex justify-around py-2 z-40 text-slate-400">
+            <button onClick={() => setActiveTab('dashboard')} className={`flex flex-col items-center ${activeTab === 'dashboard' ? 'text-brand-400' : ''}`}>
+              <i className="fa-solid fa-chart-pie text-base"></i>
+              <span className="text-[10px] mt-0.5">Inicio</span>
+            </button>
+            <button onClick={() => setActiveTab('orders')} className={`flex flex-col items-center relative ${activeTab === 'orders' ? 'text-brand-400' : ''}`}>
+              <i className="fa-solid fa-clipboard-list text-base"></i>
+              <span className="text-[10px] mt-0.5">Órdenes</span>
+            </button>
+            <button onClick={() => setIsCreatingOrder(true)} className="flex flex-col items-center -mt-5 bg-brand-600 text-white p-3 rounded-full shadow-lg">
+              <i className="fa-solid fa-plus text-lg"></i>
+            </button>
+            <button onClick={() => setActiveTab('cash')} className={`flex flex-col items-center ${activeTab === 'cash' ? 'text-brand-400' : ''}`}>
+              <i className="fa-solid fa-cash-register text-base"></i>
+              <span className="text-[10px] mt-0.5">Caja</span>
+            </button>
+            <button onClick={() => setActiveTab('config')} className={`flex flex-col items-center ${activeTab === 'config' ? 'text-brand-400' : ''}`}>
+              <i className="fa-solid fa-sliders text-base"></i>
+              <span className="text-[10px] mt-0.5">Ajustes</span>
+            </button>
+          </div>
+
+          {/* MODALES */}
+          {isCreatingOrder && <CreateOrderModal onClose={() => setIsCreatingOrder(false)} onSubmit={handleCreateOrder} />}
+          {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onUpdateStatus={handleUpdateOrderStatus} onRegisterPayment={(ord) => { setSelectedOrder(null); setSelectedOrderForPayment(ord); setIsRegisteringPayment(true); }} onPrint={(type, ord) => setPrintPreviewDoc({ type, order: ord })} />}
+          {isRegisteringPayment && selectedOrderForPayment && <RegisterPaymentModal order={selectedOrderForPayment} onClose={() => setIsRegisteringPayment(false)} onSubmit={(pData) => handleAddPaymentToOrder(selectedOrderForPayment.id, pData)} />}
+          {printPreviewDoc && <PrintPreviewModal docData={printPreviewDoc} businessConfig={businessConfig} onClose={() => setPrintPreviewDoc(null)} />}
+          {showConfigModal && <FirebaseConfigModal currentConfig={firebaseConfig} onSave={handleSaveFirebaseConfig} onClose={() => setShowConfigModal(false)} />}
+        </div>
+      );
+    }
+
+    function NavTab({ active, onClick, icon, label, badge }) {
+      return (
+        <button onClick={onClick} className={`flex items-center space-x-2 px-4 py-3 font-medium text-xs border-b-2 transition ${active ? 'border-brand-500 text-brand-400 bg-slate-800' : 'border-transparent text-slate-400 hover:text-slate-200'}`}>
+          <i className={`fa-solid ${icon}`}></i>
+          <span>{label}</span>
+          {badge > 0 && <span className="bg-brand-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{badge}</span>}
+        </button>
+      );
+    }
+
+    function DashboardView({ orders, cashMovements, onNewOrderClick, onOpenOrder }) {
+      return (
+        <div className="space-y-4">
+          <div className="bg-slate-900 text-white rounded-2xl p-5 shadow flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-bold">Panel de Control</h2>
+              <p className="text-slate-400 text-xs mt-0.5">Gestión en tiempo real entre PC y Teléfono.</p>
+            </div>
+            <button onClick={onNewOrderClick} className="hidden sm:flex bg-brand-500 hover:bg-brand-600 text-white font-semibold px-4 py-2 rounded-xl text-xs items-center gap-2">
+              <i className="fa-solid fa-plus"></i> Nueva Orden
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <MetricCard title="Órdenes Activas" value={orders.filter(o => o.status !== 'Entregado').length} icon="fa-wrench" color="bg-amber-500" />
+            <MetricCard title="Total por Cobrar" value={formatMoney(orders.reduce((s, o) => s + (o.balance || 0), 0))} icon="fa-hand-holding-dollar" color="bg-purple-500" />
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div className="px-4 py-3 border-b font-bold text-xs">Órdenes Recientes</div>
+            <div className="divide-y divide-slate-100">
+              {orders.slice(0, 5).map(ord => (
+                <div key={ord.id} onClick={() => onOpenOrder(ord)} className="p-3 hover:bg-slate-50 flex items-center justify-between cursor-pointer">
+                  <div>
+                    <div className="font-bold text-xs text-brand-600">#{ord.id} - {ord.clientName}</div>
+                    <div className="text-[11px] text-slate-500">{ord.brand} {ord.model}</div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100">{ord.status}</span>
+                    <div className="text-xs font-bold mt-1 text-slate-800">{formatMoney(ord.balance)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function MetricCard({ title, value, icon, color }) {
+      return (
+        <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold text-slate-400 uppercase">{title}</p>
+            <h4 className="text-base font-extrabold text-slate-900 mt-0.5">{value}</h4>
+          </div>
+          <div className={`w-9 h-9 rounded-lg ${color} text-white flex items-center justify-center text-sm shadow-sm`}>
+            <i className={`fa-solid ${icon}`}></i>
+          </div>
+        </div>
+      );
+    }
+
+    function OrdersView({ orders, onNewOrderClick, onSelectOrder, onRegisterPayment, onPrintDoc }) {
+      const [search, setSearch] = useState('');
+      const filtered = orders.filter(o => (o.id + o.clientName + o.clientPhone + o.model).toLowerCase().includes(search.toLowerCase()));
+
+      return (
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <input type="text" placeholder="Buscar orden, cliente, teléfono..." value={search} onChange={e => setSearch(e.target.value)} className="flex-1 px-3 py-2 bg-white border rounded-xl text-xs" />
+            <button onClick={onNewOrderClick} className="hidden sm:block bg-brand-600 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Crear</button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {filtered.map(ord => (
+              <div key={ord.id} className="bg-white rounded-xl border p-4 shadow-sm space-y-2">
+                <div className="flex justify-between items-start">
+                  <span className="font-mono text-xs font-bold text-brand-600">#{ord.id}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100">{ord.status}</span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-sm text-slate-900">{ord.brand} {ord.model}</h4>
+                  <p className="text-xs text-slate-600">{ord.clientName} ({ord.clientPhone})</p>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t text-xs">
+                  <div>Saldo: <span className="font-bold text-rose-600">{formatMoney(ord.balance)}</span></div>
+                  <div className="flex gap-1">
+                    <button onClick={() => onSelectOrder(ord)} className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-[11px] font-semibold">Editar</button>
+                    <button onClick={() => onRegisterPayment(ord)} className="px-2 py-1 bg-emerald-600 text-white rounded text-[11px] font-semibold">Abonar</button>
+                    <button onClick={() => onPrintDoc('ticket80', ord)} className="p-1 text-slate-600 hover:text-slate-900"><i className="fa-solid fa-print"></i></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function CashView({ cashSession, cashMovements, closuresHistory, summary, onOpenCash, onNewMovement, onCierreZ }) {
+      return (
+        <div className="space-y-4">
+          <div className="bg-white p-4 rounded-xl border flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-sm">Estado de Caja</h3>
+              <p className="text-xs text-slate-500">{cashSession ? 'Turno Abierto' : 'Caja Cerrada'}</p>
+            </div>
+            {!cashSession ? (
+              <button onClick={onOpenCash} className="bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">Abrir Caja</button>
+            ) : (
+              <button onClick={onCierreZ} className="bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold">Cierre Z</button>
+            )}
+          </div>
+
+          {summary && (
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="bg-white p-3 rounded-lg border">Ingresos: <span className="font-bold text-emerald-600">+{formatMoney(summary.totalIngresos)}</span></div>
+              <div className="bg-white p-3 rounded-lg border">Efectivo Esperado: <span className="font-bold text-slate-900">{formatMoney(summary.expectedCashInHand)}</span></div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function ClientsView({ clients }) {
+      return (
+        <div className="bg-white rounded-xl border p-4">
+          <h3 className="font-bold text-sm mb-3">Directorio de Clientes</h3>
+          <div className="divide-y text-xs">
+            {clients.map(c => (
+              <div key={c.id} className="py-2 flex justify-between">
+                <div><span className="font-bold">{c.name}</span> ({c.phone})</div>
+                <span className="text-slate-400">{c.rut || 'Sin RUT'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    function ConfigView({ config, onSave }) {
+      const [form, setForm] = useState(config);
+      return (
+        <div className="bg-white rounded-xl border p-4 space-y-3 text-xs">
+          <h3 className="font-bold text-sm">Ajustes del Taller</h3>
+          <div><label className="font-bold">Nombre</label><input type="text" value={form.name || ''} onChange={e => setForm({...form, name: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
+          <div><label className="font-bold">RUT</label><input type="text" value={form.rut || ''} onChange={e => setForm({...form, rut: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
+          <div><label className="font-bold">Teléfono</label><input type="text" value={form.phone || ''} onChange={e => setForm({...form, phone: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
+          <button onClick={() => onSave(form)} className="bg-brand-600 text-white px-4 py-2 rounded font-bold w-full">Guardar Configuración</button>
+        </div>
+      );
+    }
+
+    function CreateOrderModal({ onClose, onSubmit }) {
+      const [f, setF] = useState({ clientName: '', clientPhone: '', brand: '', model: '', reportedFault: '', finalCost: '', initialPaymentAmount: '' });
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 space-y-3 text-xs max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-sm">Nueva Orden de Trabajo</h3>
+            <input type="text" placeholder="Nombre Cliente *" value={f.clientName} onChange={e => setF({...f, clientName: e.target.value})} className="w-full p-2 border rounded" />
+            <input type="text" placeholder="Teléfono *" value={f.clientPhone} onChange={e => setF({...f, clientPhone: e.target.value})} className="w-full p-2 border rounded" />
+            <div className="grid grid-cols-2 gap-2">
+              <input type="text" placeholder="Marca *" value={f.brand} onChange={e => setF({...f, brand: e.target.value})} className="p-2 border rounded" />
+              <input type="text" placeholder="Modelo *" value={f.model} onChange={e => setF({...f, model: e.target.value})} className="p-2 border rounded" />
+            </div>
+            <textarea placeholder="Falla reportada *" value={f.reportedFault} onChange={e => setF({...f, reportedFault: e.target.value})} className="w-full p-2 border rounded"></textarea>
+            <input type="number" placeholder="Costo Total ($)" value={f.finalCost} onChange={e => setF({...f, finalCost: e.target.value})} className="w-full p-2 border rounded font-bold" />
+            <input type="number" placeholder="Abono Inicial ($)" value={f.initialPaymentAmount} onChange={e => setF({...f, initialPaymentAmount: e.target.value})} className="w-full p-2 border rounded text-emerald-600 font-bold" />
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={onClose} className="px-3 py-1.5 bg-slate-100 rounded">Cancelar</button>
+              <button onClick={() => onSubmit(f)} className="px-4 py-1.5 bg-brand-600 text-white rounded font-bold">Crear Orden</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function RegisterPaymentModal({ order, onClose, onSubmit }) {
+      const [amt, setAmt] = useState('');
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-4 max-w-xs w-full space-y-3 text-xs">
+            <h3 className="font-bold">Abonar a OT #{order.id}</h3>
+            <input type="number" placeholder="Monto ($)" value={amt} onChange={e => setAmt(e.target.value)} className="w-full p-2 border rounded font-bold text-sm" />
+            <div className="flex justify-end gap-2">
+              <button onClick={onClose} className="px-3 py-1 bg-slate-100 rounded">Cancelar</button>
+              <button onClick={() => onSubmit({ amount: amt, method: 'Efectivo', note: 'Abono' })} className="px-3 py-1 bg-emerald-600 text-white rounded font-bold">Abonar</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function OrderDetailModal({ order, onClose, onUpdateStatus, onRegisterPayment, onPrint }) {
+      const [st, setSt] = useState(order.status);
+      const [diag, setDiag] = useState(order.diagnosis || '');
+      const [cost, setCost] = useState(order.finalCost || 0);
+
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-5 space-y-3 text-xs max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b pb-2">
+              <span className="font-bold font-mono text-brand-600">#{order.id} - {order.brand} {order.model}</span>
+              <button onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
+            </div>
+            <div><label className="font-bold">Estado</label>
+              <select value={st} onChange={e => setSt(e.target.value)} className="w-full p-2 border rounded mt-1 font-bold">
+                <option value="Ingresado">Ingresado</option>
+                <option value="En Diagnóstico">En Diagnóstico</option>
+                <option value="En Reparación">En Reparación</option>
+                <option value="Listo para Entregar">Listo para Entregar</option>
+                <option value="Entregado">Entregado</option>
+              </select>
+            </div>
+            <div><label className="font-bold">Diagnóstico Técnico</label><textarea value={diag} onChange={e => setDiag(e.target.value)} className="w-full p-2 border rounded mt-1"></textarea></div>
+            <div><label className="font-bold">Costo Final ($)</label><input type="number" value={cost} onChange={e => setCost(e.target.value)} className="w-full p-2 border rounded mt-1 font-bold" /></div>
+            <div className="pt-2 flex justify-between items-center border-t">
+              <button onClick={() => onPrint('ticket80', order)} className="px-3 py-1.5 bg-slate-800 text-white rounded"><i className="fa-solid fa-print"></i> Ticket</button>
+              <button onClick={() => onUpdateStatus(order.id, st, diag, '', cost)} className="px-4 py-1.5 bg-brand-600 text-white rounded font-bold">Guardar</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function PrintPreviewModal({ docData, businessConfig, onClose }) {
+      const { type, order } = docData;
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="no-print flex justify-between items-center mb-4">
+              <button onClick={() => window.print()} className="bg-brand-600 text-white px-3 py-1 rounded text-xs font-bold"><i className="fa-solid fa-print"></i> Imprimir</button>
+              <button onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="printable-area" className="text-black">
+              <div className="ticket-80mm mx-auto text-center">
+                <h2 className="font-bold text-sm uppercase">{businessConfig.name}</h2>
+                <p>RUT: {businessConfig.rut}</p>
+                <div className="border-b border-black my-2"></div>
+                <p className="font-bold">ORDEN DE TRABAJO #{order.id}</p>
+                <div className="text-left space-y-1 my-2">
+                  <p><strong>Cliente:</strong> {order.clientName}</p>
+                  <p><strong>Equipo:</strong> {order.brand} {order.model}</p>
+                  <p><strong>Falla:</strong> {order.reportedFault}</p>
+                </div>
+                <div className="border-b border-black my-2"></div>
+                <p className="text-right font-mono font-bold">SALDO: {formatMoney(order.balance)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function FirebaseConfigModal({ currentConfig, onSave, onClose }) {
+      const [cfg, setCfg] = useState(currentConfig);
+      return (
+        <div className="fixed inset-0 z-50 bg-slate-900/80 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-5 max-w-sm w-full space-y-3 text-xs">
+            <h3 className="font-bold text-sm">Configuración de Firestore</h3>
+            <div><label className="font-bold">API Key</label><input type="text" value={cfg.apiKey || ''} onChange={e => setCfg({...cfg, apiKey: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
+            <div><label className="font-bold">Project ID</label><input type="text" value={cfg.projectId || ''} onChange={e => setCfg({...cfg, projectId: e.target.value})} className="w-full p-2 border rounded mt-1" /></div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={onClose} className="px-3 py-1.5 bg-slate-100 rounded">Cancelar</button>
+              <button onClick={() => onSave(cfg)} className="px-4 py-1.5 bg-brand-600 text-white rounded font-bold">Guardar y Conectar</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
